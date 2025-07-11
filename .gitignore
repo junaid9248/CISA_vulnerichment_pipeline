@@ -1,0 +1,21 @@
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files  
+.env
+*.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
