@@ -181,20 +181,105 @@ class cveExtractor:
         
         return year_data
     
-    def get_cve_files(self, file_path: str) -> Optional[Dict[str, Any]]:
+    def get_cve_data_json(self, year_data: Dict):
 
         try:
-            response = self.session.get(file_path)
-            if response.status_code == 200:
-                return response.json()
+            for subdir in year_data['subdirs']:
+                print(f"🔍 Processing subdirectory: {subdir}")
+                for file in year_data['subdirs'][subdir]:
+
+                    file_name = file['name']
+                    download_url = file['download_url']
+                    
+                    print(f"📥 Downloading {file_name}")
+                    
+                    response = self.session.get(download_url)
+                    
+                    if self._handle_rate_limit(response):
+                        response = self.session.get(download_url)
+
+                    if response.status_code == 200:
+                        cve_data = response.json()
+                        #passing for extraction immediately
+                        self.extract_cve_data(cve_data)
+                        print(f"✅ Successfully downloaded {file_name}")
+                    else:
+                        print(f"❌ Failed to download {file_name}: {response.status_code}")
+                        print(f"📝 Error details: {response.text[:200]}")
+        except:
+            print("❌ Error processing year data. Please check the structure of the data.")
+            return
+
+
+    def extract_cve_data(self, cve_data_json: Dict):
+        
+        cve_entry_template={
+            'cve_id': '',
+
+            'published_date': '',
+            'updated_date': '',
+
+            'cisa_kev': 'FALSE',
+            'cisa_kev_date': '',
+
+            'base_severity': '',
+            'base_score': '',
+            'exploitability_score': '',
+            'impact_score': '',
+            'epss_score': '',
+            'epss_percentile': '',
+            
+            'attack_vector': '',
+            'attack_complexity': '',
+            'privileges_required': '',
+            'user_interaction': '',
+            'scope': '',
+            'confidentiality_impact': '',
+            'integrity_impact': '',
+            'availability_impact': ''
+            
+        }
+
+        try:
+            #Extract CVE Id, date publsihed and date updated values
+            cve_entry_template['cve_id'] = cve_data_json.get('cveMetadata', {}).get('cveId', '')
+            cve_entry_template['published_date'] = cve_data_json.get('cveMetadata', {}).get('datePublished', '')
+            cve_entry_template['updated_date'] = cve_data_json.get('cveMetadata', {}).get('dateUpdated', '')
+
+            # Look for CISA ADP container
+            containers = cve_data_json.get('containers', {})
+            cisa_adp = None
+            
+            for container_key, container_data in containers.items():
+                if 'cisa.gov' in container_key.lower() or 'adp' in container_key.lower():
+                    cisa_adp = container_data
+                    break
+            
+            if cisa_adp:
+            # Extract KEV appearence and date added to kev list if CISA ADP data is present 
+                 if cisa_adp.get('other', {})['type'] == 'kev':
+                    cve_entry_template['cisa_kev'] = 'TRUE'
+                    cve_entry_template['cisa_kev_date'] = cisa_adp.get('other', {}).get('content', {}).get('dateAdded', '')
+            #If there are multiple entries in the 'other' field, check if any of them is a KEV entry
             else:
-                print(f"❌ Failed to get CVE files: {response.status_code}")
-                print(f"📝 Error details: {response.text[:200]}")
-        except requests.RequestException as e:
-            print(f"❌ Network error: {e}")
+               if isinstance(cve_data_json.get('other', []), list):
+                    for other_entry in cve_data_json.get('other', []):
+                        if other_entry.get('type') == 'kev':
+                            cve_entry_template['cisa_kev'] = 'TRUE'
+                            cve_entry_template['cisa_kev_date'] = other_entry.get('content', {}).get('dateAdded', '')
 
-        return None
+            # Extract CVSS v3.1 values
+            cvss_data= None
+            #Search for the metrics container in list of containers
+            for container_key, container_data in containers.items():
+                metrics = container_data.get('metrics', {})
 
+            
+
+        except KeyError as e:
+            print(f"❌ KeyError while extracting CVE data: {e}")
+            return
+       
 
 if __name__ == "__main__":
     
@@ -207,4 +292,5 @@ if __name__ == "__main__":
     if all_years:
         print(f"Available years: {all_years}")
         extract_data = extractor.get_cve_files_for_year(all_years[0])
+        extractor.get_cve_data(extract_data)
         print(extract_data)
