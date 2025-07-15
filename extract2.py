@@ -183,32 +183,63 @@ class cveExtractor:
     
     def get_cve_data_json(self, year_data: Dict):
 
+        print(f"🔍 Starting to process year data...")
+        print(f"📂 Subdirectories found: {list(year_data['subdirs'].keys())}")
+        
+        total_files = sum(len(files) for files in year_data['subdirs'].values())
+        files_processed = 0
+        files_written_to_csv = 0
+
         try:
             for subdir in year_data['subdirs']:
                 print(f"🔍 Processing subdirectory: {subdir}")
+
                 for file in year_data['subdirs'][subdir]:
 
                     file_name = file['name']
                     download_url = file['download_url']
-                    
                     print(f"📥 Downloading {file_name}")
-                    
-                    response = self.session.get(download_url)
-                    
-                    if self._handle_rate_limit(response):
-                        response = self.session.get(download_url)
 
-                    if response.status_code == 200:
-                        cve_data = response.json()
-                        #passing for extraction immediately
-                        self.extract_cve_data(cve_data)
-                        print(f"✅ Successfully downloaded {file_name}")
+                    try: 
+                    
+                        response = self.session.get(download_url)
+                    
+                        if self._handle_rate_limit(response):
+                            response = self.session.get(download_url)
+
+                        if response.status_code == 200:
+                            print(f"✅ Successfully downloaded {file_name}")
+
+                        try: 
+                            cve_data = response.json()
+
+                            #passing for extraction immediately
+                            extracted_data = self.extract_cve_data(cve_data)
+
+                            if extracted_data:
+                                self.write_csv(extracted_data)
+
+                        except json.JSONDecodeError as e:
+                            print(f"❌ JSON parsing error for {file_name}: {e}")
+                    
+                    except Exception as e:
+                            print(f"❌ Error processing {file_name}: {e}")
+                            import traceback
+                            traceback.print_exc()
+
                     else:
                         print(f"❌ Failed to download {file_name}: {response.status_code}")
                         print(f"📝 Error details: {response.text[:200]}")
-        except:
-            print("❌ Error processing year data. Please check the structure of the data.")
-            return
+        except Exception as e:
+            print(f"❌ Unexpected error in get_cve_data_json: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        print(f"📊 Summary:")
+        print(f"   - Files processed: {files_processed}")
+        print(f"   - Files written to CSV: {files_written_to_csv}")
+        
+        return files_written_to_csv
 
 
     def extract_cve_data(self, cve_data_json: Dict):
@@ -250,8 +281,9 @@ class cveExtractor:
         }
 
         try:
+            cve_id = cve_data_json.get('cveMetadata', {}).get('cveId', '')
             #Extract CVE Id, date publsihed and date updated values
-            cve_entry_template['cve_id'] = cve_data_json.get('cveMetadata', {}).get('cveId', '')
+            cve_entry_template['cve_id'] = cve_id
             cve_entry_template['published_date'] = cve_data_json.get('cveMetadata', {}).get('datePublished', '')
             cve_entry_template['updated_date'] = cve_data_json.get('cveMetadata', {}).get('dateUpdated', '')
 
@@ -296,47 +328,72 @@ class cveExtractor:
                     cisa_adp_problem_container = cisa_adp_container.get('problemTypes', [])
 
                     for problem_type in cisa_adp_problem_container:
-                        if 'descriptions' in problem_type:
-                            cve_entry_template['cwe_number'] = problem_type['descriptions'].get('cweId', '')
-                            cve_entry_template['cwe_description'] = problem_type['descriptions'].get('description', '')
+                        descriptions = problem_type.get('descriptions', [])
+
+                        for decsription in descriptions:
+                            if decsription.get('type') == 'CWE':
+                                cve_entry_template['cwe_number'] = decsription.get('cweId', '')
+                                cve_entry_template['cwe_description'] = decsription.get('description', '')
+                                break
 
             #Finding the cna container in containers array
             if 'cna' in cve_data_json.get('containers', {}):
                 cna_container = cve_data_json['containers']['cna']
 
-            affected_list = cna_container.get('affected', [])
-            for affected_item in affected_list:
-                # Extract vendor and product
-                vendor = affected_item.get('vendor', '')
-                product = affected_item.get('product', '')
+                affected_list = cna_container.get('affected', [])
+                for affected_item in affected_list:
+                    # Extract vendor and product
+                    vendor = affected_item.get('vendor', '')
+                    product = affected_item.get('product', '')
 
-                cve_entry_template['impacted_vendor'] = vendor
-                cve_entry_template['impacted_products'].append(product)
+                    cve_entry_template['impacted_vendor'] = vendor
+                    cve_entry_template['impacted_products'].append(product)
 
-                versions_list = affected_item.get('versions', [])  # ← Fixed: versions is a list
-                for version_item in versions_list:
-                    cve_entry_template['vulnerable_versions'].append(version_item.get('version', ''))
+                    versions_list = affected_item.get('versions', [])  # ← Fixed: versions is a list
+                    for version_item in versions_list:
+                        cve_entry_template['vulnerable_versions'].append(version_item.get('version', ''))
 
-            return cve_entry_template
+                print(f"✅ Successfully extracted data for {cve_id}")
+                return cve_entry_template
 
-        except KeyError as e:
-            print(f"❌ KeyError while extracting CVE data: {e}")
-            return
+        except Exception as e:
+            print(f"❌ Error in extract_cve_data: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
         
-    def write_csv(self,cve_template):
+    def write_csv(self, cve_template):
+        """Write CVE data to CSV file in the same directory as the script"""
         try:
-            row_titles = ['CVE ID', 'Published date','Updated date','CISA KEV appearance', 'KEV addition date', 
-                          'Base severity', 'Base score','attack vector', 'attack complexity',
-                          'privileges required', 'user interaction', 'confidentiality impact', 'availability impact', 'integrity impact',
-                          'impacted vendor', 'impacted products', 'vulnerable versions',
-                          'cwe number', 'cwe description']
-            with open('cve_data.csv', 'a', newline='') as csvfile:
+            # Get the directory where the script is located
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            csv_file_path = os.path.join(script_dir, 'cve_data.csv')
+            
+            print(f"📁 CSV file will be saved at: {csv_file_path}")
+            
+            # Convert lists to strings for CSV
+            if isinstance(cve_template['impacted_products'], list):
+                cve_template['impacted_products'] = '; '.join(cve_template['impacted_products'])
+            if isinstance(cve_template['vulnerable_versions'], list):
+                cve_template['vulnerable_versions'] = '; '.join(cve_template['vulnerable_versions'])
+
+            # Check if file exists to decide whether to write header
+            file_exists = os.path.exists(csv_file_path)
+            
+            with open(csv_file_path, 'a', newline='', encoding='utf-8') as csvfile:
                 fieldnames = cve_template.keys()
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader(row_titles)
+                
+                # Write header only if file is new
+                if not file_exists:
+                    writer.writeheader()
+                    print("📋 CSV header written")
+                
                 writer.writerow(cve_template)
-
-        except: return
+                print(f"✅ CVE data written: {cve_template['cve_id']}")
+                
+        except Exception as e:
+            print(f"❌ Error writing to CSV: {e}")
 
        
 
@@ -349,7 +406,6 @@ if __name__ == "__main__":
 
 
     if all_years:
-        print(f"Available years: {all_years}")
         extract_data = extractor.get_cve_files_for_year(all_years[0])
-        extractor.get_cve_data(extract_data)
+        extractor.get_cve_data_json(extract_data)
         print(extract_data)
