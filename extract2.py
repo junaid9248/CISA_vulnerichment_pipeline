@@ -224,19 +224,21 @@ class cveExtractor:
 
             'base_severity': '',
             'base_score': '',
-            'exploitability_score': '',
-            'impact_score': '',
-            'epss_score': '',
-            'epss_percentile': '',
+            
+            #'exploitability_score': '',
+            #'impact_score': '',
+            #'epss_score': '',
+            #'epss_percentile': '',
             
             'attack_vector': '',
             'attack_complexity': '',
             'privileges_required': '',
             'user_interaction': '',
-            'scope': '',
+            #'scope': '',
             'confidentiality_impact': '',
-            'integrity_impact': '',
             'availability_impact': '',
+            'integrity_impact': '',
+            
 
             'impacted_vendor': '',
             'impacted_products': [],
@@ -315,9 +317,27 @@ class cveExtractor:
                 for version_item in versions_list:
                     cve_entry_template['vulnerable_versions'].append(version_item.get('version', ''))
 
+            return cve_entry_template
+
         except KeyError as e:
             print(f"❌ KeyError while extracting CVE data: {e}")
             return
+        
+    def write_csv(self,cve_template):
+        try:
+            row_titles = ['CVE ID', 'Published date','Updated date','CISA KEV appearance', 'KEV addition date', 
+                          'Base severity', 'Base score','attack vector', 'attack complexity',
+                          'privileges required', 'user interaction', 'confidentiality impact', 'availability impact', 'integrity impact',
+                          'impacted vendor', 'impacted products', 'vulnerable versions',
+                          'cwe number', 'cwe description']
+            with open('cve_data.csv', 'a', newline='') as csvfile:
+                fieldnames = cve_template.keys()
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader(row_titles)
+                writer.writerow(cve_template)
+
+        except: return
+
        
 
 if __name__ == "__main__":
