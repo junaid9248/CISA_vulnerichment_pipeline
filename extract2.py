@@ -236,8 +236,15 @@ class cveExtractor:
             'scope': '',
             'confidentiality_impact': '',
             'integrity_impact': '',
-            'availability_impact': ''
-            
+            'availability_impact': '',
+
+            'impacted_vendor': '',
+            'impacted_products': [],
+            'vulnerable_versions': [],
+
+            'cwe_number': '',
+            'cwe_description': '',
+
         }
 
         try:
@@ -246,35 +253,67 @@ class cveExtractor:
             cve_entry_template['published_date'] = cve_data_json.get('cveMetadata', {}).get('datePublished', '')
             cve_entry_template['updated_date'] = cve_data_json.get('cveMetadata', {}).get('dateUpdated', '')
 
-            # Look for CISA ADP container
-            containers = cve_data_json.get('containers', {})
-            cisa_adp = None
-            
-            for container_key, container_data in containers.items():
-                if 'cisa.gov' in container_key.lower() or 'adp' in container_key.lower():
-                    cisa_adp = container_data
-                    break
-            
-            if cisa_adp:
-            # Extract KEV appearence and date added to kev list if CISA ADP data is present 
-                 if cisa_adp.get('other', {})['type'] == 'kev':
-                    cve_entry_template['cisa_kev'] = 'TRUE'
-                    cve_entry_template['cisa_kev_date'] = cisa_adp.get('other', {}).get('content', {}).get('dateAdded', '')
-            #If there are multiple entries in the 'other' field, check if any of them is a KEV entry
-            else:
-               if isinstance(cve_data_json.get('other', []), list):
-                    for other_entry in cve_data_json.get('other', []):
-                        if other_entry.get('type') == 'kev':
+            # Finding the ADP and cna containers in containersarray
+            if 'adp' in cve_data_json.get('containers', {}):
+                adp_containers = cve_data_json['containers']['adp']
+
+                cisa_adp_container = None
+
+                for adp_container in adp_containers:
+                    # Find the specific CISA ADP container that has metrics
+                    if adp_container.get('title') == "CISA ADP Vulnrichment":
+                        cisa_adp_container = adp_container
+                        
+                
+                if cisa_adp_container:
+                    # Finding the metrics list in the CISA ADP container
+                    cisa_adp_metrics_container = cisa_adp_container.get('metrics', [])
+
+                    # Iterating over the metrics list
+                    for metric in cisa_adp_metrics_container:
+                        if 'cvssV3_1' in metric:
+                            # Extracting the CVSS v3.1 metrics
+                            cve_entry_template['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
+                            cve_entry_template['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
+                            cve_entry_template['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
+                            cve_entry_template['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
+                            cve_entry_template['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
+                            cve_entry_template['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
+                            cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
+                            cve_entry_template['base_severity'] = metric['cvssV3_1'].get('baseSeverity', '')
+                            cve_entry_template['base_score'] = metric['cvssV3_1'].get('baseScore', '')
+                            continue
+
+                        if 'other' in metric and metric['other'].get('type') == 'kev':
+                            # Extracting the CISA KEV information including date added
                             cve_entry_template['cisa_kev'] = 'TRUE'
-                            cve_entry_template['cisa_kev_date'] = other_entry.get('content', {}).get('dateAdded', '')
+                            cve_entry_template['cisa_kev_date'] = metric['other']['content']['dateAdded']
+                            continue
+                    
+                    #Finding the problem types in the CISA ADP container 
+                    cisa_adp_problem_container = cisa_adp_container.get('problemTypes', [])
 
-            # Extract CVSS v3.1 values
-            cvss_data= None
-            #Search for the metrics container in list of containers
-            for container_key, container_data in containers.items():
-                metrics = container_data.get('metrics', {})
+                    for problem_type in cisa_adp_problem_container:
+                        if 'descriptions' in problem_type:
+                            cve_entry_template['cwe_number'] = problem_type['descriptions'].get('cweId', '')
+                            cve_entry_template['cwe_description'] = problem_type['descriptions'].get('description', '')
 
-            
+            #Finding the cna container in containers array
+            if 'cna' in cve_data_json.get('containers', {}):
+                cna_container = cve_data_json['containers']['cna']
+
+            affected_list = cna_container.get('affected', [])
+            for affected_item in affected_list:
+                # Extract vendor and product
+                vendor = affected_item.get('vendor', '')
+                product = affected_item.get('product', '')
+
+                cve_entry_template['impacted_vendor'] = vendor
+                cve_entry_template['impacted_products'].append(product)
+
+                versions_list = affected_item.get('versions', [])  # ← Fixed: versions is a list
+                for version_item in versions_list:
+                    cve_entry_template['vulnerable_versions'].append(version_item.get('version', ''))
 
         except KeyError as e:
             print(f"❌ KeyError while extracting CVE data: {e}")
