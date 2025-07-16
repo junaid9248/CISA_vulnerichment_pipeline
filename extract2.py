@@ -243,6 +243,30 @@ class cveExtractor:
         
         return files_written_to_csv
 
+    #Helper function to convert vector string to metric values if they are not present in the CVE data entry already
+    def vector_string_to_metrics(self, vector_string: str) -> Dict[str, Any]:
+        #Defining the possible values for each score metric
+        av_values = ['NETWORK', 'ADJACENT_NETWORK', 'LOCAL', 'PHYSICAL']
+        ac_values = ['LOW', 'HIGH']
+        privileges_required_values = ['NONE', 'LOW', 'HIGH']
+        user_interaction_values = ['NONE', 'REQUIRED']
+        cia_impact_values = ['NONE', 'LOW', 'HIGH']
+        scope_values = ['UNCHANGED', 'CHANGED']
+
+        #Splitting the vector string into individual metrics using ':' as separator
+        metrics = vector_string.split('/')[1:]
+
+        metrics_new = []
+        for metric in metrics:
+            metrics_new.append(metric.split(':'))
+
+        #Converting the list of lists into a dictionary for easier access
+        metrics_dict = dict(metrics_new)
+
+
+
+
+        return
 
     def extract_cve_data(self, cve_data_json: Dict):
         
@@ -258,17 +282,21 @@ class cveExtractor:
             'base_severity': '',
             'base_score': '',
             
+            'base_score_metrics': {
+                #"CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N"
 
-            'scope': '',
-            'attack_vector': '',
-            'attack_complexity': '',
-            'privileges_required': '',
-            'user_interaction': '',
-            'confidentiality_impact': '',
-            'availability_impact': '',
-            'integrity_impact': '',
+                'attack_vector': '',
+                'attack_complexity': '',
+                'privileges_required': '',
+                'user_interaction': '',
+                'scope': '',
+                'confidentiality_impact': '',
+                'integrity_impact': '',
+                'availability_impact': '',
+                
+            },
 
- #'exploitability_score': '',
+            #'exploitability_score': '',
             #'impact_score': '',
             #'epss_score': '',
             #'epss_percentile': '',           
@@ -310,17 +338,24 @@ class cveExtractor:
                     for metric in cisa_adp_metrics_container:
                         if 'cvssV3_1' in metric:
                             # Extracting the CVSS v3.1 metrics
-                            cve_entry_template['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
-                            cve_entry_template['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
-                            cve_entry_template['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
-                            cve_entry_template['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
-                            cve_entry_template['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
-                            cve_entry_template['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
-                            cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
                             cve_entry_template['base_severity'] = metric['cvssV3_1'].get('baseSeverity', '')
                             cve_entry_template['base_score'] = metric['cvssV3_1'].get('baseScore', '')
-                            cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
+                            
+                            cve_entry_template['base_score_metrics']['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
+                            cve_entry_template['base_score_metrics']['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
+                            cve_entry_template['base_score_metrics']['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
+                            cve_entry_template['base_score_metrics']['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
+                            cve_entry_template['base_score_metrics']['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
+                            cve_entry_template['base_score_metrics']['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
+                            cve_entry_template['base_score_metrics']['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
+                            cve_entry_template['base_score_metrics']['scope'] = metric['cvssV3_1'].get('scope', '')
                             continue
+                        
+                        #If the base metrics are not present, we can try to extract them from vector string
+                        if any(not value for value in cve_entry_template['base_score_metrics'].values()):
+                            cvss_v3_1_vector_string = metric.get('vectorString', '')
+                            self.vector_string_to_metrics(cvss_v3_1_vector_string)
+                            
 
                         if 'other' in metric and metric['other'].get('type') == 'kev':
                             # Extracting the CISA KEV information including date added
@@ -376,8 +411,7 @@ class cveExtractor:
                             cve_entry_template['base_score'] = metric['cvssV3_1'].get('baseScore', '')
                             cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
                             continue
-                        else:
-                            cvss_v3_1_vector_string = metric.get('vectorString', '')
+                        
 
 
                 if 'problemTypes' in cna_container:
@@ -417,15 +451,22 @@ class cveExtractor:
             if isinstance(cve_template['vulnerable_versions'], list):
                 cve_template['vulnerable_versions'] = '; '.join(cve_template['vulnerable_versions'])
 
-            # Check if file exists to decide whether to write header
-            file_exists = os.path.exists(csv_file_path)
+            # Check if this is the first write (you'll need to add this as a class variable)
+            if not hasattr(self, '_csv_initialized'):
+                # First write - use 'w' mode to overwrite
+                mode = 'w'
+                self._csv_initialized = True
+                write_header = True
+            else:
+                # Subsequent writes - use 'a' mode to append
+                mode = 'a'
+                write_header = False
             
-            with open(csv_file_path, 'a', newline='', encoding='utf-8') as csvfile:
+            with open(csv_file_path, mode, newline='', encoding='utf-8') as csvfile:
                 fieldnames = cve_template.keys()
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 
-                # Write header only if file is new
-                if not file_exists:
+                if write_header:
                     writer.writeheader()
                     print("📋 CSV header written")
                 
