@@ -230,6 +230,8 @@ class cveExtractor:
                     else:
                         print(f"❌ Failed to download {file_name}: {response.status_code}")
                         print(f"📝 Error details: {response.text[:200]}")
+                        import traceback
+                        traceback.print_exc()
         except Exception as e:
             print(f"❌ Unexpected error in get_cve_data_json: {e}")
             import traceback
@@ -256,20 +258,20 @@ class cveExtractor:
             'base_severity': '',
             'base_score': '',
             
-            #'exploitability_score': '',
-            #'impact_score': '',
-            #'epss_score': '',
-            #'epss_percentile': '',
-            
+
+            'scope': '',
             'attack_vector': '',
             'attack_complexity': '',
             'privileges_required': '',
             'user_interaction': '',
-            #'scope': '',
             'confidentiality_impact': '',
             'availability_impact': '',
             'integrity_impact': '',
-            
+
+ #'exploitability_score': '',
+            #'impact_score': '',
+            #'epss_score': '',
+            #'epss_percentile': '',           
 
             'impacted_vendor': '',
             'impacted_products': [],
@@ -287,6 +289,7 @@ class cveExtractor:
             cve_entry_template['published_date'] = cve_data_json.get('cveMetadata', {}).get('datePublished', '')
             cve_entry_template['updated_date'] = cve_data_json.get('cveMetadata', {}).get('dateUpdated', '')
 
+            #THIS IS FOR ADP CONTAINER
             # Finding the ADP and cna containers in containersarray
             if 'adp' in cve_data_json.get('containers', {}):
                 adp_containers = cve_data_json['containers']['adp']
@@ -316,6 +319,7 @@ class cveExtractor:
                             cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
                             cve_entry_template['base_severity'] = metric['cvssV3_1'].get('baseSeverity', '')
                             cve_entry_template['base_score'] = metric['cvssV3_1'].get('baseScore', '')
+                            cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
                             continue
 
                         if 'other' in metric and metric['other'].get('type') == 'kev':
@@ -336,8 +340,9 @@ class cveExtractor:
                                 cve_entry_template['cwe_description'] = decsription.get('description', '')
                                 break
 
-            #Finding the cna container in containers array
+            #THIS IS FOR CNA CONTAINER
             if 'cna' in cve_data_json.get('containers', {}):
+                #Finding the cna container in containers array
                 cna_container = cve_data_json['containers']['cna']
 
                 affected_list = cna_container.get('affected', [])
@@ -353,7 +358,42 @@ class cveExtractor:
                     for version_item in versions_list:
                         cve_entry_template['vulnerable_versions'].append(version_item.get('version', ''))
 
-                print(f"✅ Successfully extracted data for {cve_id}")
+                # SOMETIMES extracting metrics from the cna container
+                if "metrics" in cna_container:
+                    cna_metrics_container = cna_container.get('metrics', [])
+
+                    for metric in cna_metrics_container:
+                        if 'cvssV3_1' in metric:
+                            # Extracting the CVSS v3.1 metrics
+                            cve_entry_template['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
+                            cve_entry_template['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
+                            cve_entry_template['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
+                            cve_entry_template['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
+                            cve_entry_template['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
+                            cve_entry_template['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
+                            cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
+                            cve_entry_template['base_severity'] = metric['cvssV3_1'].get('baseSeverity', '')
+                            cve_entry_template['base_score'] = metric['cvssV3_1'].get('baseScore', '')
+                            cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
+                            continue
+                        else:
+                            cvss_v3_1_vector_string = metric.get('vectorString', '')
+
+
+                if 'problemTypes' in cna_container:
+                    # Finding the problem types in the CNA container
+                    cna_problem_container = cna_container.get('problemTypes', [])
+
+                    for problem_type in cna_problem_container:
+                        descriptions = problem_type.get('descriptions', [])
+
+                        for description in descriptions:
+                            if description.get('type') == 'CWE':
+                                cve_entry_template['cwe_number'] = description.get('cweId', '')
+                                cve_entry_template['cwe_description'] = description.get('description', '')
+                                break
+
+                #print(f"✅ Successfully extracted data for {cve_id}")
                 return cve_entry_template
 
         except Exception as e:
@@ -406,6 +446,11 @@ if __name__ == "__main__":
 
 
     if all_years:
-        extract_data = extractor.get_cve_files_for_year(all_years[0])
+        '''
+        for year in all_years:
+            print(f"📅 Processing year: {year}")
+            extract_data = extractor.get_cve_files_for_year(year)
+            extractor.get_cve_data_json(extract_data)'''
+        
+        extract_data = extractor.get_cve_files_for_year('2011')
         extractor.get_cve_data_json(extract_data)
-        print(extract_data)
