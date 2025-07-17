@@ -244,9 +244,9 @@ class cveExtractor:
         return files_written_to_csv
 
     #Helper function to convert vector string to metric values if they are not present in the CVE data entry already
-    def vector_string_to_metrics(self, basescoremetrics,vector_string: str) -> Dict[str, Any]:
+    def vector_string_to_metrics(self, cve_entry_template,vector_string: str) -> Dict[str, Any]:
         if not vector_string:
-            return basescoremetrics
+            return cve_entry_template
         
         try:
             #Splitting the vector string into individual metrics using ':' as separator
@@ -261,67 +261,77 @@ class cveExtractor:
 
             # Parse each metric
             match metrics_dict.get('AV'):
-                case 'N': basescoremetrics['attack_vector'] = 'NETWORK'
-                case 'A': basescoremetrics['attack_vector'] = 'ADJACENT_NETWORK'
-                case 'L': basescoremetrics['attack_vector'] = 'LOCAL'
-                case 'P': basescoremetrics['attack_vector'] = 'PHYSICAL'
-                case _: basescoremetrics['attack_vector'] = ''
+                case 'N': cve_entry_template['attack_vector'] = 'NETWORK'
+                case 'A': cve_entry_template['attack_vector'] = 'ADJACENT_NETWORK'
+                case 'L': cve_entry_template['attack_vector'] = 'LOCAL'
+                case 'P': cve_entry_template['attack_vector'] = 'PHYSICAL'
+                case _: cve_entry_template['attack_vector'] = ''
             
             match metrics_dict.get('AC'):
-                case 'L': basescoremetrics['attack_complexity'] = 'LOW'
-                case 'H': basescoremetrics['attack_complexity'] = 'HIGH'
-                case _: basescoremetrics['attack_complexity'] = ''
+                case 'L': cve_entry_template['attack_complexity'] = 'LOW'
+                case 'H': cve_entry_template['attack_complexity'] = 'HIGH'
+                case _: cve_entry_template['attack_complexity'] = ''
             
             match metrics_dict.get('PR'):
-                case 'N': basescoremetrics['privileges_required'] = 'NONE'
-                case 'L': basescoremetrics['privileges_required'] = 'LOW'
-                case 'H': basescoremetrics['privileges_required'] = 'HIGH'
-                case _: basescoremetrics['privileges_required'] = ''
+                case 'N': cve_entry_template['privileges_required'] = 'NONE'
+                case 'L': cve_entry_template['privileges_required'] = 'LOW'
+                case 'H': cve_entry_template['privileges_required'] = 'HIGH'
+                case _: cve_entry_template['privileges_required'] = ''
             
             match metrics_dict.get('UI'):
-                case 'N': basescoremetrics['user_interaction'] = 'NONE'
-                case 'R': basescoremetrics['user_interaction'] = 'REQUIRED'
-                case _: basescoremetrics['user_interaction'] = ''
+                case 'N': cve_entry_template['user_interaction'] = 'NONE'
+                case 'R': cve_entry_template['user_interaction'] = 'REQUIRED'
+                case _: cve_entry_template['user_interaction'] = ''
             
             match metrics_dict.get('S'):
-                case 'U': basescoremetrics['scope'] = 'UNCHANGED'
-                case 'C': basescoremetrics['scope'] = 'CHANGED'
-                case _: basescoremetrics['scope'] = ''
+                case 'U': cve_entry_template['scope'] = 'UNCHANGED'
+                case 'C': cve_entry_template['scope'] = 'CHANGED'
+                case _: cve_entry_template['scope'] = ''
             
             match metrics_dict.get('C'):
-                case 'N': basescoremetrics['confidentiality_impact'] = 'NONE'
-                case 'L': basescoremetrics['confidentiality_impact'] = 'LOW'
-                case 'H': basescoremetrics['confidentiality_impact'] = 'HIGH'
-                case _: basescoremetrics['confidentiality_impact'] = ''
+                case 'N': cve_entry_template['confidentiality_impact'] = 'NONE'
+                case 'L': cve_entry_template['confidentiality_impact'] = 'LOW'
+                case 'H': cve_entry_template['confidentiality_impact'] = 'HIGH'
+                case _: cve_entry_template['confidentiality_impact'] = ''
             
             match metrics_dict.get('I'):
-                case 'N': basescoremetrics['integrity_impact'] = 'NONE'
-                case 'L': basescoremetrics['integrity_impact'] = 'LOW'
-                case 'H': basescoremetrics['integrity_impact'] = 'HIGH'
-                case _: basescoremetrics['integrity_impact'] = ''
+                case 'N': cve_entry_template['integrity_impact'] = 'NONE'
+                case 'L': cve_entry_template['integrity_impact'] = 'LOW'
+                case 'H': cve_entry_template['integrity_impact'] = 'HIGH'
+                case _: cve_entry_template['integrity_impact'] = ''
             
             match metrics_dict.get('A'):
-                case 'N': basescoremetrics['availability_impact'] = 'NONE'
-                case 'L': basescoremetrics['availability_impact'] = 'LOW'
-                case 'H': basescoremetrics['availability_impact'] = 'HIGH'
-                case _: basescoremetrics['availability_impact'] = ''
+                case 'N': cve_entry_template['availability_impact'] = 'NONE'
+                case 'L': cve_entry_template['availability_impact'] = 'LOW'
+                case 'H': cve_entry_template['availability_impact'] = 'HIGH'
+                case _: cve_entry_template['availability_impact'] = ''
         except Exception as e:
             print(f"❌ Error parsing vector string: {e}")
         
-        return basescoremetrics 
+        return cve_entry_template 
 
     def extract_cve_data(self, cve_data_json: Dict):
         
         cve_entry_template={
-            'cve_id': '',
 
+            'cve_id': '',
             'published_date': '',
             'updated_date': '',
 
             'cisa_kev': 'FALSE',
             'cisa_kev_date': '',
-
             
+            'base_severity': '',
+            'base_score': '',
+            'attack_vector': '',
+            'attack_complexity': '',
+            'privileges_required': '',
+            'user_interaction': '',
+            'scope': '',
+            'confidentiality_impact': '',
+            'integrity_impact': '',
+            'availability_impact': '',
+
             #'exploitability_score': '',
             #'impact_score': '',
             #'epss_score': '',
@@ -334,22 +344,8 @@ class cveExtractor:
             'cwe_number': '',
             'cwe_description': '',
 
-            'base_severity': '',
-            'base_score': '',
-
         }
-
-        #Temp storage for base score metrics
-        base_score_metrics ={
-                'attack_vector': '',
-                'attack_complexity': '',
-                'privileges_required': '',
-                'user_interaction': '',
-                'scope': '',
-                'confidentiality_impact': '',
-                'integrity_impact': '',
-                'availability_impact': '',
-        }
+ 
 
         try:
             cve_id = cve_data_json.get('cveMetadata', {}).get('cveId', '')
@@ -384,35 +380,39 @@ class cveExtractor:
                             
                             # Extract individual metrics if available
                             if 'attackVector' in metric['cvssV3_1']:
-                                base_score_metrics['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
+                                cve_entry_template['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
                             if 'attackComplexity' in metric['cvssV3_1']:
-                                base_score_metrics['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
+                                cve_entry_template['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
                             if 'integrityImpact' in metric['cvssV3_1']:
-                                base_score_metrics['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
+                                cve_entry_template['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
                             if 'availabilityImpact' in metric['cvssV3_1']:
-                                base_score_metrics['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
+                                cve_entry_template['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
                             if 'confidentialityImpact' in metric['cvssV3_1']:
-                                base_score_metrics['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
+                                cve_entry_template['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
                             if 'privilegesRequired' in metric['cvssV3_1']:
-                                base_score_metrics['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
+                                cve_entry_template['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
                             if 'userInteraction' in metric['cvssV3_1']:
-                                base_score_metrics['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
+                                cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
                             if 'scope' in metric['cvssV3_1']:
-                                base_score_metrics['scope'] = metric['cvssV3_1'].get('scope', '')
+                                cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
 
-                            # Check for missing metrics
-                            missing_metrics = [key for key, value in base_score_metrics.items() if not value]
+                            #Finding any of the missing metrics
+                            missing_metrics = []
+
+                            for key in ['attack_vector', 'attack_complexity', 'privileges_required', 'user_interaction', 
+                                                'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
+                                # Check if the metric is empty
+                                if not cve_entry_template[key]:
+                                    missing_metrics.append(key)
 
                             if missing_metrics:
-                                cvss_v3_1_vector_string = metric.get('vectorString', '')
+                                cvss_v3_1_vector_string = metric['cvssV3_1'].get('vectorString', '')
+                                print(f"⚠️ Missing CVSS v3.1 metrics for {cve_id}: {missing_metrics} in ADP container")
 
                                 if cvss_v3_1_vector_string:
-                                    print(f"📊 Base metrics incomplete parsing ADP vector string for {cve_id}: {cvss_v3_1_vector_string}")
-                                    self.vector_string_to_metrics(base_score_metrics ,cvss_v3_1_vector_string)
+                                    self.vector_string_to_metrics(cve_entry_template ,cvss_v3_1_vector_string)
 
-                            cve_entry_template.update(base_score_metrics)
                             continue
-
 
                         if 'other' in metric and metric['other'].get('type') == 'kev':
                             # Extracting the CISA KEV information including date added
@@ -450,7 +450,7 @@ class cveExtractor:
                     for version_item in versions_list:
                         cve_entry_template['vulnerable_versions'].append(version_item.get('version', ''))
 
-                # SOMETIMES extracting metrics from the cna container
+                # SOMETIMES extracting metrics from the cna container if adp container has no metrics
                 if "metrics" in cna_container:
                     cna_metrics_container = cna_container.get('metrics', [])
 
@@ -463,35 +463,39 @@ class cveExtractor:
                             
                             # Extract individual metrics if available
                             if 'attackVector' in metric['cvssV3_1']:
-                                base_score_metrics['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
+                                cve_entry_template['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
                             if 'attackComplexity' in metric['cvssV3_1']:
-                                base_score_metrics['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
+                                cve_entry_template['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
                             if 'integrityImpact' in metric['cvssV3_1']:
-                                base_score_metrics['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
+                                cve_entry_template['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
                             if 'availabilityImpact' in metric['cvssV3_1']:
-                                base_score_metrics['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
+                                cve_entry_template['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
                             if 'confidentialityImpact' in metric['cvssV3_1']:
-                                base_score_metrics['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
+                                cve_entry_template['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
                             if 'privilegesRequired' in metric['cvssV3_1']:
-                                base_score_metrics['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
+                                cve_entry_template['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
                             if 'userInteraction' in metric['cvssV3_1']:
-                                base_score_metrics['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
+                                cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
                             if 'scope' in metric['cvssV3_1']:
-                                base_score_metrics['scope'] = metric['cvssV3_1'].get('scope', '')
+                                cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
 
                             # Check for missing metrics
-                            missing_metrics = [key for key, value in base_score_metrics.items() if not value]
+                            missing_metrics= []
+                            for key in ['attack_vector', 'attack_complexity', 'privileges_required', 'user_interaction', 
+                                                'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
+                                # Check if the metric is empty
+                                if not cve_entry_template[key]:
+                                    missing_metrics.append(key)
+
                             if missing_metrics:
                                 # Handle missing metrics (e.g., log a warning)
                                 print(f"⚠️ Missing CVSS v3.1 metrics for {cve_id}: {missing_metrics}")
-                                cvss_v3_1_vector_string = metric.get['cvssV3_1']('vectorString', '')
+
+                                cvss_v3_1_vector_string = metric['cvssV3_1'].get('vectorString', '')
                                 if cvss_v3_1_vector_string:
-                                    self.vector_string_to_metrics(base_score_metrics ,cvss_v3_1_vector_string)
-                            
-                            cve_entry_template.update(base_score_metrics)
+                                    self.vector_string_to_metrics(cve_entry_template ,cvss_v3_1_vector_string)
+
                             continue
-
-
 
                 if 'problemTypes' in cna_container:
                     # Finding the problem types in the CNA container
@@ -566,11 +570,13 @@ if __name__ == "__main__":
 
 
     if all_years:
-        '''
+        test_years = all_years[:4]  # For testing, take the first two years
+    
         for year in all_years:
             print(f"📅 Processing year: {year}")
             extract_data = extractor.get_cve_files_for_year(year)
-            extractor.get_cve_data_json(extract_data)'''
+            extractor.get_cve_data_json(extract_data)
         
+        '''
         extract_data = extractor.get_cve_files_for_year('2001')
-        extractor.get_cve_data_json(extract_data)
+        extractor.get_cve_data_json(extract_data)'''
