@@ -243,6 +243,45 @@ class cveExtractor:
         
         return files_written_to_csv
 
+    #Helper function to calculate SSVC score 
+    def calculate_ssvc_score(self, exploitation: str, automatable: str, technical_impact: str) -> str:
+        # Normalize inputs to lowercase
+        exploitation = exploitation.lower()
+        automatable = automatable.lower()
+        technical_impact = technical_impact.lower()
+
+        if exploitation == 'active':
+            if technical_impact == 'total':
+                return 'Act'
+            else:  # partial
+                if automatable == 'yes':
+                    return 'Act'
+                else:  # no
+                    return 'Attend'
+        
+        elif exploitation == 'poc':
+            if automatable == 'yes':
+                if technical_impact == 'total':
+                    return 'Attend'
+                else:  # partial
+                    return 'Attend'
+            else:  # no
+                if technical_impact == 'total':
+                    return 'Attend'
+                else:  # partial
+                    return 'Track'
+                
+        elif exploitation == 'none':
+            if automatable == 'yes':
+                if technical_impact == 'total':
+                    return 'Attend'
+                else:  # partial
+                    return 'Track'
+            else:  # no
+                return 'Track'
+            
+        return 'Unknown'  # Fallback case if none match
+
     #Helper function to convert vector string to metric values if they are not present in the CVE data entry already
     def vector_string_to_metrics(self, cve_entry_template,vector_string: str) -> Dict[str, Any]:
         if not vector_string:
@@ -320,9 +359,10 @@ class cveExtractor:
 
             'cisa_kev': 'FALSE',
             'cisa_kev_date': '',
-            
-            'base_severity': '',
+
+            #Cvss v3.1 metrics
             'base_score': '',
+            'base_severity': '',
             'attack_vector': '',
             'attack_complexity': '',
             'privileges_required': '',
@@ -332,6 +372,13 @@ class cveExtractor:
             'integrity_impact': '',
             'availability_impact': '',
 
+            #SSVC metrics
+            'ssvc_timestamp': '',
+            'ssvc_exploitation': '',
+            'ssvc_automatable': '',
+            'ssvc_technical_impact': '',
+            'ssvc_decision': '',  
+            
             #'exploitability_score': '',
             #'impact_score': '',
             #'epss_score': '',
@@ -419,18 +466,43 @@ class cveExtractor:
                             cve_entry_template['cisa_kev'] = 'TRUE'
                             cve_entry_template['cisa_kev_date'] = metric['other']['content']['dateAdded']
                             continue
-                    
-                    #Finding the problem types in the CISA ADP container 
+
+                        if 'other' in metric and metric['other'].get('type') == 'ssvc':
+                            # Extracting the SSVC metrics
+                            ssvc_data_content = metric['other'].get('content', {})
+                            ssvc_data_options = ssvc_data_content.get('options', [])
+
+                            cve_entry_template['ssvc_timestamp'] = ssvc_data_content.get('timestamp', '')
+
+                            for option in ssvc_data_options:
+                                if 'Exploitation' in option:
+                                    cve_entry_template['ssvc_exploitation'] = option['Exploitation']
+                                if 'Automatable' in option:
+                                    cve_entry_template['ssvc_automatable'] = option['Automatable']
+                                if 'Technical Impact' in option:
+                                    cve_entry_template['ssvc_technical_impact'] = option['Technical Impact']
+
+                            # Calculate SSVC decision if all required fields are present
+                            if cve_entry_template['ssvc_exploitation'] and cve_entry_template['ssvc_automatable'] and cve_entry_template['ssvc_technical_impact']:
+                                cve_entry_template['ssvc_decision'] = self.calculate_ssvc_score(
+                                    cve_entry_template['ssvc_exploitation'],
+                                    cve_entry_template['ssvc_automatable'],
+                                    cve_entry_template['ssvc_technical_impact']
+                                )
+
+                    #Finding the problem types in the CISA ADP container
                     cisa_adp_problem_container = cisa_adp_container.get('problemTypes', [])
 
                     for problem_type in cisa_adp_problem_container:
+                        #Extract the descriptions list from the problemTypes list in the adp container
                         descriptions = problem_type.get('descriptions', [])
 
-                        for decsription in descriptions:
-                            if decsription.get('type') == 'CWE':
-                                cve_entry_template['cwe_number'] = decsription.get('cweId', '')
-                                cve_entry_template['cwe_description'] = decsription.get('description', '')
-                                break
+                        if descriptions:
+                            for description in descriptions:
+                                if description.get('type') == 'CWE':
+                                    cve_entry_template['cwe_number'] = description.get('cweId', '')
+                                    cve_entry_template['cwe_description'] = description.get('description', '')
+                                    break
 
             #THIS IS FOR CNA CONTAINER
             if 'cna' in cve_data_json.get('containers', {}):
@@ -574,7 +646,7 @@ if __name__ == "__main__":
     
         for year in all_years:
             print(f"📅 Processing year: {year}")
-            extract_data = extractor.get_cve_files_for_year(year)
+            extract_data = extractor.get_cve_files_for_year('2011')
             extractor.get_cve_data_json(extract_data)
         
         '''
