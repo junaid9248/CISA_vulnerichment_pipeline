@@ -3,11 +3,14 @@ import json
 import csv
 import os
 import time
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
+logging.basicConfig(level=logging.INFO) 
 
 class cveExtractor:
 
@@ -393,7 +396,6 @@ class cveExtractor:
 
         }
  
-
         try:
             cve_id = cve_data_json.get('cveMetadata', {}).get('cveId', '')
             #Extract CVE Id, date publsihed and date updated values
@@ -596,7 +598,8 @@ class cveExtractor:
         try:
             # Get the directory where the script is located
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            csv_file_path = os.path.join(script_dir, 'cve_data.csv')
+            dataset_dir_path = os.path.join(script_dir, 'dataset')
+            csv_file_path = os.path.join(dataset_dir_path, 'cve_data.csv')
             
             print(f"📁 CSV file will be saved at: {csv_file_path}")
             
@@ -642,7 +645,7 @@ if __name__ == "__main__":
 
 
     if all_years:
-        test_years = all_years[:4]  # For testing, take the first two years
+        test_years = all_years[:3]  # For testing, take the first two years
     
         for year in all_years:
             print(f"📅 Processing year: {year}")

@@ -19,3 +19,10 @@ __pycache__/
 .idea/
 .vscode/
 *.swp
+
+# Test codes
+test1.py
+test2.py
+kaggle_upload.py
+
+.github/
