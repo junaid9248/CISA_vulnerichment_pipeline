@@ -7,6 +7,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+import re
+
 #Created a logger for logging event details
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ class KaggleManager:
     def __init__(self, dataset_folder_path="dataset"):
         self.dataset_folder_path = Path(dataset_folder_path)
         self.dataset_path = self.dataset_folder_path / "cve_data.csv"
-        #self.metadata_file = self.dataset_folder_path / "dataset_metadata.json"
+        self.metadata_file = self.dataset_folder_path / "dataset-metadata.json"
 
         #Validating the key kaggle enivronment variables
         self.username_token = os.getenv('KAGGLE_USERNAME')
@@ -92,15 +94,18 @@ class KaggleManager:
     #Method to check if a dataset exists on Kaggle using metadata id
     def _check_dataset_exists(self):
         try:
-            logger.info("Checking for existing dataset")
+            logger.info("Checking for existing dataset...")
             command=['kaggle', 'datasets', 'list', '-s', self.dataset_metadata['id'], '--csv']
 
             exists = self._run_kaggle_command(command)
+            #return output is a class object
 
             if exists.stdout:
                 outputs = exists.stdout.strip().split('\n')
+                outputs_str = ','.join(outputs)
 
-                if len(outputs) > 1 and self.dataset_metadata['id'] in outputs:
+                match = re.search(self.dataset_metadata['id'], outputs_str)
+                if len(outputs) > 1 and match:
                     logger.info(f"Dataset {self.dataset_metadata['id']} already exists on Kaggle")
                     return True
                 
@@ -115,22 +120,9 @@ class KaggleManager:
         try:
             logger.info("Creating new dataset on Kaggle...")
             logger.info(f"Dataset path: {self.dataset_path}")
-            
-            dataset_metadata_path = self.dataset_folder_path / "dataset-metadata.json"
-            
-            logger.info("Checking if metadata file exists...")
-            if not os.path.exists(dataset_metadata_path):
-                logger.info("Metadata file does NOT exist, creating metadata file...")
-                create_metadata_command = ['kaggle', 'datasets', 'init', '-p', str(self.dataset_folder_path)]
-                self._run_kaggle_command(create_metadata_command)
 
-                logger.info("Creating dataset file...")
-                create_dataset_command = ['kaggle', 'datasets', 'create', '-p', str(self.dataset_folder_path)]
-                result = self._run_kaggle_command(create_dataset_command)
-            else:
-                logger.info("Metadata file exists, creating dataset...")
-                create_dataset_command = ['kaggle', 'datasets', 'create', '-p', str(self.dataset_folder_path)]
-                result = self._run_kaggle_command(create_dataset_command)
+            create_dataset = ['kaggle', 'datasets', 'create', '-u','-p', str(self.dataset_folder_path)]
+            result = self._run_kaggle_command(create_dataset)
 
             if result:
                 logger.info("✅ Dataset created successfully")
@@ -152,7 +144,7 @@ class KaggleManager:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 update_command = ['kaggle', 
                                   'datasets', 
-                                  'versions', 
+                                  'version', 
                                   '-p', 
                                   str(self.dataset_folder_path), 
                                   '-m', f'New version has been uploaded at: {timestamp}']
@@ -181,7 +173,7 @@ class KaggleManager:
                 dataset = self._create_dataset()
 
             if  dataset:
-                upload_url = f'https://www.kaggle.com/datasets/junaidmohammed9248/{self.dataset_metadata["id"]}'
+                return True
 
         except Exception as e:
             logger.error(f"Error occurred while uploading dataset: {e}")

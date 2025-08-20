@@ -8,9 +8,12 @@
       "name": "CC0-1.0"
     }
   ],
-  "tags": [
+  "keywords": [
     "cybersecurity",
     "vulnerabilities", 
+    "cve",
+    "cvss",
+    "ssvc",
     "cisa",
     "security",
     "risk-assessment",

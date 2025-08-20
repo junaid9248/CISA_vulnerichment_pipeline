@@ -649,7 +649,7 @@ if __name__ == "__main__":
     
         for year in all_years:
             print(f"📅 Processing year: {year}")
-            extract_data = extractor.get_cve_files_for_year('2011')
+            extract_data = extractor.get_cve_files_for_year('2012')
             extractor.get_cve_data_json(extract_data)
         
         '''
