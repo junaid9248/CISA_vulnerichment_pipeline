@@ -291,7 +291,7 @@ class cveExtractor:
             return cve_entry_template
         
         try:
-            #Splitting the vector string into individual metrics using ':' as separator
+            #Splitting the vector string into individual metrics using '/' as separator
             metrics = vector_string.split('/')[1:]
 
             metrics_new = []

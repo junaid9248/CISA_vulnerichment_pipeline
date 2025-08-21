@@ -21,6 +21,10 @@ def vector_string_to_metrics(vector_string: str) -> dict:
     # Converting the list of lists into a dictionary for easier access
     metrics_dict = dict(metrics_new)
     print(f"Metrics dict: {metrics_dict}")
+
+    print('These are the metrics keys',metrics_dict.keys())
+
+    metric_dict_keys = metrics_dict.keys()
     
     # Parse each metric
     match metrics_dict.get('AV'):
@@ -73,4 +77,4 @@ def vector_string_to_metrics(vector_string: str) -> dict:
 
 # Test the function
 result = vector_string_to_metrics("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N")
-print(result)
+print('These are the metrics',result)
