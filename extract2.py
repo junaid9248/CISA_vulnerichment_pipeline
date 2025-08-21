@@ -302,7 +302,7 @@ class cveExtractor:
             metrics_dict = dict(metrics_new)
 
             # Parse each metric
-            match metrics_dict.get('AV'):
+            match metrics_dict.keys()[0]:
                 case 'N': cve_entry_template['attack_vector'] = 'NETWORK'
                 case 'A': cve_entry_template['attack_vector'] = 'ADJACENT_NETWORK'
                 case 'L': cve_entry_template['attack_vector'] = 'LOCAL'
