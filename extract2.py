@@ -593,8 +593,9 @@ class cveExtractor:
         """Write CVE data to CSV file in the same directory as the script"""
         try:
             # Get the directory where the script is located
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            dataset_dir_path = os.path.join(script_dir, 'dataset')
+            
+            dataset_dir_path = os.path.join(os.getcwd(), 'dataset')
+            os.makedirs(dataset_dir_path, exist_ok=True)
             csv_file_path = os.path.join(dataset_dir_path, 'cve_data.csv')
             
             
