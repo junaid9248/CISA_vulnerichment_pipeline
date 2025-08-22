@@ -69,7 +69,7 @@ jobs:
             fi
 
             #Second, check if Kaggle credential env variables are set
-            if [ -n "${{ secrets.KAGGLE_USERNAME }}" ] && [ -n "${{ secrets.KAGGLE_KEY }}" ]; then
+            if [ -n ${{ secrets.KAGGLE_USERNAME }} ] && [ -n ${{ secrets.KAGGLE_KEY }} ]; then
               echo "Kaggle credentials are set"
             else
               echo "Kaggle credentials are not set"
@@ -80,5 +80,5 @@ jobs:
             python extract2.py
             echo 'CVE extraction completed.'
 
-            [ -f "cve_data.csv" ] && echo " CSV file created successfully." || echo "Failed to create output CSV file."
+            [ -f cve_data.csv ] && echo " CSV file created successfully." || echo "Failed to create output CSV file."
 
