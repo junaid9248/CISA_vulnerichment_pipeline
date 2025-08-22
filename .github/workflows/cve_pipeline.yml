@@ -38,7 +38,11 @@ jobs:
             cache: 'pip'
             run: |
                 python -m pip install --upgrade pip
-                pip install -r requirements.txt
+
+        # Step 2.5: Installing dependencies from requirements file using pip
+        - name: Install dependencies
+          run: |
+            pip install -r requirements.txt
 
         # Step 3: Setup github and kaggle environment variables
         - name: Setup environment variables
