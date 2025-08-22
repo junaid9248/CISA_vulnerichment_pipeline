@@ -80,5 +80,5 @@ jobs:
             python extract2.py
             echo 'CVE extraction completed.'
 
-            [ -f cve_data.csv ] && echo " CSV file created successfully." || echo "Failed to create output CSV file."
+            [ -f dataset/cve_data.csv ] && echo " CSV file created successfully." || echo "Failed to create output CSV file."
 
