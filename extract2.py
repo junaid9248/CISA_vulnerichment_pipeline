@@ -639,13 +639,9 @@ if __name__ == "__main__":
 
 
     if all_years:
-        test_years = all_years[:3]  # For testing, take the first two years
+        test_years = all_years[:3]  
     
-        for year in all_years:
+        for year in test_years:
             logging.info(f" Processing year: {year}")
-            extract_data = extractor.get_cve_files_for_year('2002')
+            extract_data = extractor.get_cve_files_for_year(year)
             extractor.get_cve_data_json(extract_data)
-        
-        '''
-        extract_data = extractor.get_cve_files_for_year('2001')
-        extractor.get_cve_data_json(extract_data)'''

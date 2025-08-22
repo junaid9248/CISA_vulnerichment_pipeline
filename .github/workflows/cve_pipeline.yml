@@ -48,7 +48,7 @@ jobs:
           run: |
             pip install -r requirements.txt
 
-        #Step 4: Configure Kaggle json file for API access
+        #Step 3: Configure Kaggle json file for API access
         - name: Configure Kaggle API credentials
           run: |
             # Create a directory for Kaggle credential
@@ -58,7 +58,7 @@ jobs:
             #Setting directory permissions to r+w only 
             chmod 600 ~/.kaggle/kaggle.json
 
-        # Step 5: Run cve extraction and csv creation from vulnerichment repo
+        # Step 4: Run cve extraction and csv creation from vulnerichment repo
         - name: Run CVE extraction from CISA vulnrichment repository
           run: |
             # First, check if GITHUB_TOKEN is set
