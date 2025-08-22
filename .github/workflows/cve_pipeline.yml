@@ -47,7 +47,7 @@ jobs:
         # Step 3: Setup github and kaggle environment variables
         - name: Setup environment variables
           run: |
-            echo 'GITHUB_TOKEN' = ${{secrets.GH_TOKEN}} >> $GITHUB_ENV 
+            echo 'GH_TOKEN' = ${{secrets.GH_TOKEN}} >> $GITHUB_ENV 
             echo 'KAGGLE_USERNAME' = ${{secrets.KAGGLE_USERNAME}} >> $GITHUB_ENV
             echo 'KAGGLE_KEY' = ${{secrets.KAGGLE_KEY}} >> $GITHUB_ENV  
 
@@ -65,7 +65,7 @@ jobs:
         - name: Run CVE extraction from CISA vulnrichment repository
           run: |
             # First, check if GITHUB_TOKEN is set
-            if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+            if [ -n "${{ secrets.GH_TOKEN }}" ]; then
               echo "GITHUB_TOKEN is set"
             else
               echo "GITHUB_TOKEN is not set"

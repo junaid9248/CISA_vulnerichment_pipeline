@@ -8,9 +8,14 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
 
 logging.basicConfig(level=logging.INFO) 
+
+#For local environment variables, will not execute if .env file is not present
+load_dotenv(override=True)
+
+#For extraction from secrets in GitHub Actions
+GITHUB_TOKEN = os.getenv('GH_TOKEN')
 
 class cveExtractor:
 
@@ -33,8 +38,8 @@ class cveExtractor:
         self.session = requests.Session()
         self.session .headers.update(self.headers)
         
-        #Getting token from the environment variables from the .env file
-        self.token = token or os.getenv('GITHUB_TOKEN')
+        #Getting token from the environment variables from the .env file OR the github secrets
+        self.token = os.getenv('GH_TOKEN') or token
         if self.token:
             self.session.headers['Authorization'] = f"token {self.token}"
             print(" GitHub token for authentication used to establish the session.")
