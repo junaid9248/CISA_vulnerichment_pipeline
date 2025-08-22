@@ -68,17 +68,20 @@ jobs:
               echo "GITHUB_TOKEN is not set"
             fi
 
-            #Second, check if Kaggle credential env variables are set
-            if [ -n ${{ secrets.KAGGLE_USERNAME }} ] && [ -n ${{ secrets.KAGGLE_KEY }} ]; then
-              echo "Kaggle credentials are set"
-            else
-              echo "Kaggle credentials are not set"
-            fi
-
-            # Third, start CVE extraction
+            # Second, start CVE extraction
             echo 'Starting CVE extraction...'
             python extract2.py
             echo 'CVE extraction completed.'
 
             [ -f dataset/cve_data.csv ] && echo " CSV file created successfully." || echo "Failed to create output CSV file."
 
+        # Step 5: Upload dataset to kaggle
+        - name: Upload to Kaggle
+          run: |
+            # First, check if Kaggle credential env variables are set
+            if [ -n ${{ secrets.KAGGLE_USERNAME }} ] && [ -n ${{ secrets.KAGGLE_KEY }} ]; then
+              echo "Kaggle credentials are set"
+              python kaggle_manager.py
+            else
+              echo "Kaggle credentials are not set"
+              fi
