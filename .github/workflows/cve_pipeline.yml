@@ -14,7 +14,7 @@ on:
             - 'extract2.py'
             - 'kaggle_manager.py'
             - 'requirements.txt'
-            - '.github/workflows/cve-pipeline.yml'
+            - '.github/workflows/cve_pipeline.yml'
 
 jobs:
     extract-cve-and-upload:
