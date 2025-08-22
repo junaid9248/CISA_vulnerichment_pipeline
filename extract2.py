@@ -642,7 +642,7 @@ if __name__ == "__main__":
     if all_years:
         test_years = all_years[:3]  
     
-        for year in test_years:
+        for year in all_years:
             logging.info(f" Processing year: {year}")
             extract_data = extractor.get_cve_files_for_year(year)
             extractor.get_cve_data_json(extract_data)
