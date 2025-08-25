@@ -219,7 +219,7 @@ class cveExtractor:
 
                             if extracted_data:
                                 # 2. Writing the extracted information to a CSV file
-                                self.write_csv(extracted_data)
+                                self.write_csv(extracted_data, year_data['year'])
 
                         except json.JSONDecodeError as e:
                             logging.error(f"❌ JSON parsing error for {file_name}: {e}")
@@ -589,14 +589,14 @@ class cveExtractor:
             traceback.print_exc()
             return None
         
-    def write_csv(self, cve_template):
+    def write_csv(self, cve_template, year):
         """Write CVE data to CSV file in the same directory as the script"""
         try:
             # Get the directory where the script is located
             
             dataset_dir_path = os.path.join(os.getcwd(), 'dataset')
             os.makedirs(dataset_dir_path, exist_ok=True)
-            csv_file_path = os.path.join(dataset_dir_path, 'cve_data.csv')
+            csv_file_path = os.path.join(dataset_dir_path, f'cve_data{year}.csv')
             
             
             # Convert lists to strings for CSV
