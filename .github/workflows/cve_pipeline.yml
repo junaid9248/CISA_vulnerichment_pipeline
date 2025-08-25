@@ -64,7 +64,7 @@ jobs:
 
         strategy:
           matrix:
-            year: ${{ fromJson(needs.get-years.outputs.years) }}
+            year: ${{ fromJson(needs.get-years.outputs) }}
 
         steps:
         #Step 1: Check out the repository 
