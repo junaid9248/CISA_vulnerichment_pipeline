@@ -20,6 +20,9 @@ jobs:
     get-years:
 
       runs-on: ubuntu-latest
+
+      outputs:
+        years: ${{steps.get_years.outputs.years}}
       
       steps:
         # Step 1: Checkout repository
@@ -47,7 +50,7 @@ jobs:
 
           id: get_years
           run: |
-            echo "years = $(python -c "from  extract2 import cveExtractor;
+            echo "years = $(python -c "from extract2 import cveExtractor;
             import json;
             print(json.dumps(cveExtractor().get_years())")" >> $GITHUB_OUTPUT
        
@@ -64,7 +67,7 @@ jobs:
 
         strategy:
           matrix:
-            year: ${{ fromJson(needs.get-years.outputs) }}
+            year: ${{ fromJson(needs.get-years.outputs.years) }}
 
         steps:
         #Step 1: Check out the repository 
