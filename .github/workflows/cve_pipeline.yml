@@ -47,7 +47,7 @@ jobs:
 
           id: get_years
           run: |
-            echo "years = $(python "from -c extract2 import cveExtractor;
+            echo "years = $(python -c "from  extract2 import cveExtractor;
             import json;
             print(json.dumps(cveExtractor().get_years())")" >> $GITHUB_OUTPUT
        
