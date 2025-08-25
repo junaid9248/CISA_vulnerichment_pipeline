@@ -596,7 +596,7 @@ class cveExtractor:
             
             dataset_dir_path = os.path.join(os.getcwd(), 'dataset')
             os.makedirs(dataset_dir_path, exist_ok=True)
-            csv_file_path = os.path.join(dataset_dir_path, f'cve_data{year}.csv')
+            csv_file_path = os.path.join(dataset_dir_path, f'cve_data_{year}.csv')
             
             
             # Convert lists to strings for CSV
