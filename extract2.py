@@ -98,7 +98,6 @@ class cveExtractor:
                     if item['type'] == 'dir' and item['name'] not in ['.github', 'assets']:
                         years.append(item['name'])
                 logging.info(f"Number of available years: {len(years)}")
-                logging.info(f"Available years: {years}")
                 return years
             else:
                 logging.error(f"Error fetching years: {response.status_code}")
