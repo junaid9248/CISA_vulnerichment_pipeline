@@ -49,7 +49,7 @@ jobs:
           run: |
             echo "years = $(python "from -c extract2 import cveExtractor;
             import json;
-            print(json.dumps(cveExtractor().get_years()))" >> $GITHUB_OUTPUT
+            print(json.dumps(cveExtractor().get_years())")" >> $GITHUB_OUTPUT
        
 
     extract-cve-and-upload:
