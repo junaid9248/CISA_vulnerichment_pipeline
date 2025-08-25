@@ -3,6 +3,7 @@ import json
 import csv
 import os
 import time
+import sys
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
@@ -45,7 +46,6 @@ class cveExtractor:
             logging.info(" GitHub token for authentication used to establish the session.")
         else:
             logging.warning(" ⚠️ No GitHub token found. Using unauthenticated requests, which may have lower rate limits. ⚠️")
-
 
         # Test API connection
         #self._test_connection()
@@ -159,10 +159,10 @@ class cveExtractor:
                                 
                                 year_data['subdirs'][subdir_name].append({
                                     'name': file_item['name'],
-                                    'path': file_item['path'],
+                                    #'path': file_item['path'],
                                     'download_url': file_item['download_url'],
-                                    'sha': file_item['sha'],
-                                    'size': file_item['size']
+                                    #'sha': file_item['sha'],
+                                    #'size': file_item['size']
                                 })
                                 file_count += 1
                         
@@ -630,7 +630,7 @@ class cveExtractor:
             logging.error(f"❌ Error writing to CSV: {e}")
 
        
-
+       
 if __name__ == "__main__":
     
     extractor = cveExtractor()
@@ -638,10 +638,10 @@ if __name__ == "__main__":
     #Getting an array of all years
     all_years = extractor.get_years()
 
-
-    if all_years:
-        test_years = all_years[:3]  
-    
+    if len(sys.argv) > 1:
+        years = [sys.argv[1]]
+    else:
+        years = all_years 
         for year in all_years:
             logging.info(f" Processing year: {year}")
             extract_data = extractor.get_cve_files_for_year(year)

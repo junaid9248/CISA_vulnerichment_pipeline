@@ -17,49 +17,76 @@ on:
             - '.github/workflows/cve_pipeline.yml'
 
 jobs:
+    get-years:
+
+      runs-on: ubuntu-latest
+      
+      steps:
+        # Step 1: Checkout repository
+        - name: Check repository
+          uses: actions/checkout@v4
+          with: 
+            fetch-depth: 0
+
+        #Step 2: 
+        - name: Set up Python
+          uses: actions/setup-python@v4
+          with: 
+            python-version: '3.12.4'
+            cache: 'pip'
+
+        #Step 2.5: Installing dependencies from requirements file using pip
+        - name: Install dependencies
+          run: |
+            pip install -r requirements.txt
+
+        # Step 3: Get all years using extract2.py and set as output
+        - name: Get all years
+          env:
+            GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+          id: get_years
+          run: |
+            echo "years = $(python "from -c extract2 import cveExtractor;
+            import json;
+            print(json.dumps(cveExtractor().get_years()))" >> $GITHUB_OUTPUT
+       
+
     extract-cve-and-upload:
+        needs: get-years
+
+        runs-on: ubuntu-latest
+
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
 
-        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            year: ${{ fromJson(needs.get-years.outputs.years) }}
 
         steps:
         #Step 1: Check out the repository 
         - name: Check repository
           uses: actions/checkout@v4
-
           with: 
             fetch-depth: 0
 
         #Step 2: Install python and it's dependencies using pip
         - name: Setup Python
           uses: actions/setup-python@v4
-
           with: 
             python-version: '3.12.4'
             cache: 'pip'
-            run: |
-                python -m pip install --upgrade pip
 
         # Step 2.5: Installing dependencies from requirements file using pip
         - name: Install dependencies
           run: |
             pip install -r requirements.txt
 
-        #Step 3: Configure Kaggle json file for API access
-        - name: Configure Kaggle API credentials
-          run: |
-            # Create a directory for Kaggle credential
-            mkdir --parents ~/.kaggle
-            # Create a json file containing the Kaggle API credentials and copying to kaggle.json
-            echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
-            #Setting directory permissions to r+w only 
-            chmod 600 ~/.kaggle/kaggle.json
-
-        # Step 4: Run cve extraction and csv creation from vulnerichment repo
-        - name: Run CVE extraction from CISA vulnrichment repository
+        # Step 3: Run cve extraction and csv creation from vulnerichment repo
+        - name: Run CVE extraction from CISA vulnrichment repository for ${{ matrix.year }}
           run: |
             # First, check if GITHUB_TOKEN is set
             if [ -n ${{ secrets.GH_TOKEN }} ]; then
@@ -70,10 +97,20 @@ jobs:
 
             # Second, start CVE extraction
             echo 'Starting CVE extraction...'
-            python extract2.py
+            python extract2.py --year ${{ matrix.year}}
             echo 'CVE extraction completed.'
 
             [ -f dataset/cve_data.csv ] && echo " CSV file created successfully." || echo "Failed to create output CSV file."
+
+        #Step 4: Configure Kaggle json file for API access
+        - name: Configure Kaggle API credentials
+          run: |
+            # Create a directory for Kaggle credential
+            mkdir --parents ~/.kaggle
+            # Create a json file containing the Kaggle API credentials and copying to kaggle.json
+            echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
+            #Setting directory permissions to r+w only 
+            chmod 600 ~/.kaggle/kaggle.json
 
         # Step 5: Upload dataset to kaggle
         - name: Upload to Kaggle
