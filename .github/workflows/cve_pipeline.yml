@@ -108,8 +108,47 @@ jobs:
             #This is the file that is uploaded as an artifact
             path: dataset/cve_data_${{ matrix.year }}.csv
 
+    create_combined_dataset:
+
+      runs-on: ubuntu-latest
+
+      needs: extract-cves-and-create-dataset
+
+      steps:
+        # Step 1: Check out the repository
+        - name: Check repository
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+
+        # Step 2: Install python and it's dependencies using pip
+        - name: Setup Python
+          uses: actions/setup-python@v4
+          with:
+            python-version: '3.12.4'
+            cache: 'pip'
+
+        # Step 2.5: Installing dependencies from requirements file using pip
+        - name: Install dependencies
+          run: |
+            pip install -r requirements.txt
+
+        #Step 3: Download all artifacts
+        - name: Download artifacts
+          uses: actions/download-artifact@v4
+          with:
+            # Download all artifacts in the artifacts folder
+            path: dataset/artifacts
+
+        #Step 4: Combine all artifacts
+        - name: Combine all artifacts
+          run: |
+            head -n 1 dataset/artifacts/cve_data_1999/cve_data_1999.csv > dataset/cve_data.csv
+            tail -n +2 -q dataset/artifacts/cve_data_*/cve_data_*.csv >> dataset/cve_data.csv
+            ls -lh dataset/cve_data.csv
+
     upload-to-kaggle:
-        needs: extract-cves-and-create-dataset
+        needs: create_combined_dataset
         
         runs-on: ubuntu-latest
 
@@ -135,22 +174,8 @@ jobs:
           - name: Install dependencies
             run: |
               pip install -r requirements.txt
-
-          # Step 3: Download all artifacts
-          - name: Download artifacts
-            uses: actions/download-artifact@v4
-            with:
-              # Download all artifacts in the artifacts folder
-              path: dataset/artifacts
-          
-          # Step 4: Aggregate all artifacts
-          - name: Combine all artifacts 
-            run: |
-              head -n 1 dataset/artifacts/cve_data_1999/cve_data_1999.csv > dataset/cve_data.csv
-              tail -n +2 -q dataset/artifacts/cve_data_*/cve_data_*.csv >> dataset/cve_data.csv
-              ls -lh dataset/cve_data.csv
-
-          # Step 5: Verify dataset file exists and upload to Kaggle
+ 
+          # Step 3: Verify dataset file exists and upload to Kaggle
           - name: Verify and upload to kaggle
             run: |
 

@@ -188,7 +188,8 @@ class cveExtractor:
     # 2. Writing the extracted information to a CSV file
     def get_cve_data_json(self, year_data: Dict):
 
-        logging.info(f"🔍 Starting to process year data for {year_data['year']}...")
+        check_year = year_data['year']
+        logging.info(f"🔍 Starting to process year data for {check_year}...")
 
         files_written_to_csv = 0
 
