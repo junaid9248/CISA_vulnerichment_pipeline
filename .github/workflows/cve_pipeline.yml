@@ -105,7 +105,7 @@ jobs:
 
           with:
             #This is the name of the artifact
-            name: cve_data_${{ matrix.year }}
+            name: cve_data_${{ matrix.year }}.csv
             #This is the file that is uploaded as an artifact
             path: dataset/
 
