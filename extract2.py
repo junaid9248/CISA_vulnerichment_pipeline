@@ -598,15 +598,14 @@ class cveExtractor:
             os.makedirs(dataset_dir_path, exist_ok=True)
 
             csv_file_path = os.path.join(dataset_dir_path, f'cve_data_{year}.csv')
-            
-            
+        
             # Convert lists to strings for CSV
-            file_exists = not os.path.exists(csv_file_path)
             if isinstance(cve_template['impacted_products'], list):
                 cve_template['impacted_products'] = '; '.join(cve_template['impacted_products'])
             if isinstance(cve_template['vulnerable_versions'], list):
                 cve_template['vulnerable_versions'] = '; '.join(cve_template['vulnerable_versions'])
-
+            
+            file_exists = not os.path.exists(csv_file_path)
             with open(csv_file_path, mode= 'a', newline = '', encoding='utf-8') as csvfile:
                 fieldnames = list(cve_template.keys())
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
