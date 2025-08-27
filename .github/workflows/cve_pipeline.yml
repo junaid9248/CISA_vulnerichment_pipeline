@@ -90,6 +90,7 @@ jobs:
             # First, check if GITHUB_TOKEN is set
             if [ -n ${{ secrets.GH_TOKEN }} ]; then
               echo "GITHUB_TOKEN is set"
+              
             else
               echo "GITHUB_TOKEN is not set"
             fi
@@ -106,7 +107,7 @@ jobs:
             #This is the name of the artifact
             name: cve_data_${{ matrix.year }}
             #This is the file that is uploaded as an artifact
-            path: dataset/cve_data_${{ matrix.year }}.csv
+            path: dataset/
 
     create_combined_dataset:
 
