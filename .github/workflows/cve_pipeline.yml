@@ -144,8 +144,8 @@ jobs:
         #Step 4: Combine all artifacts
         - name: Combine all artifacts
           run: |
-            head -n 1 dataset/artifacts/cve_data_1999/cve_data_1999.csv > dataset/cve_data.csv
-            tail -n +2 -q dataset/artifacts/cve_data_*/cve_data_*.csv >> dataset/cve_data.csv
+            head -n 1 dataset/artifacts/cve_data_1999.csv > dataset/cve_data.csv
+            tail -n +2 -q dataset/artifacts/cve_data_*.csv >> dataset/cve_data.csv
             ls -lh dataset/cve_data.csv
 
     upload-to-kaggle:
