@@ -107,7 +107,7 @@ jobs:
             #This is the name of the artifact
             name: cve_data_${{ matrix.year }}
             #This is the file that is uploaded as an artifact
-            path: dataset/
+            path: dataset/cve_data_${{ matrix.year }}.csv
 
     create_combined_dataset:
 
@@ -128,6 +128,11 @@ jobs:
           with:
             pattern: cve_data_*
             path: dataset/artifacts
+
+        - name: Find artifacts
+          run: |
+            echo "Found artifacts:"
+            ls  dataset/artifacts
 
         #Step 4: Combine all artifacts
         - name: Combine all artifacts
