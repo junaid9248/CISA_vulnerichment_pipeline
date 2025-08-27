@@ -105,7 +105,7 @@ jobs:
 
           with:
             #This is the name of the artifact
-            name: cve_data_${{ matrix.year }}.csv
+            name: cve_data_${{ matrix.year }}
             #This is the file that is uploaded as an artifact
             path: dataset/
 
@@ -144,8 +144,8 @@ jobs:
         #Step 4: Combine all artifacts
         - name: Combine all artifacts
           run: |
-            head -n 1 dataset/artifacts/cve_data_1999.csv > dataset/cve_data.csv
-            tail -n +2 -q dataset/artifacts/cve_data_*.csv >> dataset/cve_data.csv
+            head -n 1 dataset/artifacts/cve_data_1999 > dataset/cve_data.csv
+            tail -n +2 -q dataset/artifacts/cve_data_* >> dataset/cve_data.csv
             ls -lh dataset/cve_data.csv
 
     upload-to-kaggle:
