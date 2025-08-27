@@ -220,7 +220,7 @@ class cveExtractor:
 
                             if extracted_data:
                                 # 2. Writing the extracted information to a CSV file
-                                self.write_csv(extracted_data, year_data['year'])
+                                self.write_to_year_csv(extracted_data, year_data['year'])
 
                         except json.JSONDecodeError as e:
                             logging.error(f"❌ JSON parsing error for {file_name}: {e}")
@@ -590,7 +590,7 @@ class cveExtractor:
             traceback.print_exc()
             return None
         
-    def write_csv(self, cve_template, year):
+    def write_to_year_csv(self, cve_template, year):
         """Write CVE data to CSV file in the same directory as the script"""
         try:
             # Get the directory where the script is located
@@ -606,26 +606,14 @@ class cveExtractor:
             if isinstance(cve_template['vulnerable_versions'], list):
                 cve_template['vulnerable_versions'] = '; '.join(cve_template['vulnerable_versions'])
 
-            # Check if this is the first write (you'll need to add this as a class variable)
-            if not hasattr(self, '_csv_initialized'):
-                # First write - use 'w' mode to overwrite
-                mode = 'w'
-                self._csv_initialized = True
-                write_header = True
-            else:
-                # Subsequent writes - use 'a' mode to append
-                mode = 'a'
-                write_header = False
-            
-            with open(csv_file_path, mode, newline='', encoding='utf-8') as csvfile:
+            with open(csv_file_path, mode= 'a', newline = '', encoding='utf-8') as csvfile:
                 fieldnames = cve_template.keys()
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                
-                if write_header:
+
+                if not os.path.exists(csv_file_path):
                     writer.writeheader()
-                
+
                 writer.writerow(cve_template)
-                logging.info(f"✅ CVE data written: {cve_template['cve_id']}")
                 
         except Exception as e:
             logging.error(f"❌ Error writing to CSV: {e}")
@@ -644,6 +632,11 @@ if __name__ == "__main__":
     else:
         years = all_years 
         for year in all_years:
-            logging.info(f" Processing year: {year}")
+            #If we already have a file for this year, remove it as we will be rewriting it
+            if os.path.exists(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv')):
+                os.remove(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv'))
+                
+            
+            logging.info(f" Processing year: {year}")    
             extract_data = extractor.get_cve_files_for_year(year)
             extractor.get_cve_data_json(extract_data)
