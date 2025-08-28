@@ -186,7 +186,7 @@ jobs:
             uses: actions/download-artifact@v4
             with:
               name: cve_data_combined
-              path: dataset/cve_data_combined.csv
+              path: dataset/
 
           # Step 3: Verify dataset file exists and upload to Kaggle
           - name: Verify and upload to kaggle
