@@ -63,8 +63,8 @@ jobs:
 
         strategy:
           matrix:
-            #year: ${{ fromJson(needs.get-years.outputs.years) }}
-            year: [1999, 2000, 2001, 2002]
+            year: ${{ fromJson(needs.get-years.outputs.years) }}
+            #year: [1999, 2000, 2001, 2002]
 
         steps:
         #Step 1: Check out the repository 
