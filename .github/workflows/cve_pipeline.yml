@@ -31,7 +31,7 @@ jobs:
           with: 
             fetch-depth: 0
 
-        #Step 2: 
+        #Step 2: Setup pyhton
         - name: Set up Python
           uses: actions/setup-python@v4
           with: 
@@ -98,6 +98,10 @@ jobs:
             # Second, start CVE extraction
             python extract2.py --year ${{ matrix.year}}
             echo 'CVE extraction completed for year ${{ matrix.year }}.'
+          #Debug step
+        - name: List dataset contents after extraction
+          run: |
+            ls -lh dataset/
 
         # Step 4: Artifacting the datasets for the ${{matrix.year}} year
         - name: Upload dataset csv for year
