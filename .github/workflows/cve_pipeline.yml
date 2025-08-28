@@ -17,8 +17,8 @@ on:
             - '.github/workflows/cve_pipeline.yml'
 
 jobs:
+    # Job 1: Get all years from vulnrichment repo
     get-years:
-
       runs-on: ubuntu-latest
 
       outputs:
@@ -51,8 +51,8 @@ jobs:
           id: get_years
           run: |
             echo "years=$(python -c "from extract2 import cveExtractor; import json; print(json.dumps(cveExtractor().get_years()))")" >> "$GITHUB_OUTPUT"
-       
 
+    # Job 2: Extract CVEs and create datasets for each year
     extract-cves-and-create-dataset:
         needs: get-years
 
@@ -99,16 +99,17 @@ jobs:
             python extract2.py --year ${{ matrix.year}}
             echo 'CVE extraction completed for year ${{ matrix.year }}.'
 
-        # Step 4: Artifacting the dataset for the ${{matrix.year}} year
+        # Step 4: Artifacting the datasets for the ${{matrix.year}} year
         - name: Upload dataset csv for year
           uses: actions/upload-artifact@v4
 
           with:
             #This is the name of the artifact
-            name: cve_data_${{ matrix.year }}
+            name: cve_data_${{ matrix.year  }}
             #This is the file that is uploaded as an artifact
             path: dataset/cve_data_${{ matrix.year }}.csv
-
+    
+    #Job 3: Creating a combined dataset from all artifacts
     create_combined_dataset:
 
       runs-on: ubuntu-latest
@@ -131,7 +132,6 @@ jobs:
 
         - name: Find artifacts
           run: |
-            echo "Found artifacts:"
             ls  dataset/artifacts
 
         #Step 4: Combine all artifacts
