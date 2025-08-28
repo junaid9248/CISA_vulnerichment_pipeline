@@ -121,11 +121,6 @@ jobs:
       needs:  extract-cves-and-create-dataset
 
       steps:
-        # Step 1: Check out the repository
-        - name: Check repository
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
 
         #Step 2: Download all artifacts
         - name: Download artifacts
