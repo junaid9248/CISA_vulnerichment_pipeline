@@ -625,11 +625,11 @@ class cveExtractor:
 if __name__ == "__main__":
     
     extractor = cveExtractor()
+    years = []
 
     if len(sys.argv) > 1:
         #For automation using gh actions yaml script
-        years = [sys.argv[1]]
-
+        years = [sys.argv[2]]
     else:
         #For local machine 
         years = extractor.get_years()
