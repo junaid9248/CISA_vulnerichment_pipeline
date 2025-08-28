@@ -621,7 +621,6 @@ class cveExtractor:
             logging.error(f"❌ Error writing to CSV: {e}")
 
        
-
 if __name__ == "__main__":
     
     extractor = cveExtractor()
