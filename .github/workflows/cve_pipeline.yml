@@ -63,7 +63,8 @@ jobs:
 
         strategy:
           matrix:
-            year: ${{ fromJson(needs.get-years.outputs.years) }}
+            #year: ${{ fromJson(needs.get-years.outputs.years) }}
+            year: [1999, 2000, 2001, 2002]
 
         steps:
         #Step 1: Check out the repository 
@@ -145,6 +146,13 @@ jobs:
             tail -n +2 -q dataset/artifacts/cve_data_*/cve_data_*.csv >> dataset/cve_data.csv
             ls -lh dataset/cve_data.csv
 
+        #Step 5: Artifact created combined dataset
+        - name: Upload combined dataset artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: cve_data_combined
+            path: dataset/cve_data.csv
+
     upload-to-kaggle:
         needs: create_combined_dataset
         
@@ -172,7 +180,14 @@ jobs:
           - name: Install dependencies
             run: |
               pip install -r requirements.txt
- 
+
+          #Step 3: Download combined dataset artifact
+          - name: Download combined dataset artifact
+            uses: actions/download-artifact@v4
+            with:
+              name: cve_data_combined
+              path: dataset/cve_data_combined.csv
+
           # Step 3: Verify dataset file exists and upload to Kaggle
           - name: Verify and upload to kaggle
             run: |
