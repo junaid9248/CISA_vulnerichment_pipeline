@@ -626,19 +626,18 @@ if __name__ == "__main__":
     
     extractor = cveExtractor()
 
-    #Getting an array of all years
-    all_years = extractor.get_years()
-
     if len(sys.argv) > 1:
+        #For automation using gh actions yaml script
         years = [sys.argv[1]]
+
     else:
-        years = all_years 
-        for year in all_years:
-            #If we already have a file for this year, remove it as we will be rewriting it
-            if os.path.exists(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv')):
-                os.remove(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv'))
-                
-            
+        #For local machine 
+        years = extractor.get_years()
+    
+    for year in years:
+        #If we already have a file for this year, remove it as we will be rewriting it
+        if os.path.exists(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv')):
+            os.remove(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv'))
             logging.info(f" Processing year: {year}")    
             extract_data = extractor.get_cve_files_for_year(year)
             extractor.get_cve_data_json(extract_data)
