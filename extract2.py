@@ -615,6 +615,8 @@ class cveExtractor:
 
                 writer.writerow(cve_template)
 
+                logging.info(f"   - ✅ Written {cve_template['cve_id']} to {csv_file_path}")
+
         except Exception as e:
             logging.error(f"❌ Error writing to CSV: {e}")
 
