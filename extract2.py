@@ -636,8 +636,6 @@ if __name__ == "__main__":
     
     for year in years:
         #If we already have a file for this year, remove it as we will be rewriting it
-        if os.path.exists(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv')):
-            os.remove(os.path.join(os.getcwd(), 'dataset', f'cve_data_{year}.csv'))
-            logging.info(f" Processing year: {year}")    
-            extract_data = extractor.get_cve_files_for_year(year)
-            extractor.get_cve_data_json(extract_data)
+        logging.info(f" Processing year: {year}")    
+        extract_data = extractor.get_cve_files_for_year(year)
+        extractor.get_cve_data_json(extract_data)
