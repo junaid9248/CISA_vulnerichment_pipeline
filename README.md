@@ -28,4 +28,4 @@ This project is provided under an open license, but note that the underlying CIS
 
 ## Links
 1.[[CISA Vulnrichment repository](https://github.com/cisagov/vulnrichment)]  
-2.[{CISA CVE Vulnrichment Dataset}(https://www.kaggle.com/datasets/junaidmohammad9248/cisa-cve-vulnrichment)]
+2.[[CISA CVE Vulnrichment Dataset](https://www.kaggle.com/datasets/junaidmohammad9248/cisa-cve-vulnrichment)]
