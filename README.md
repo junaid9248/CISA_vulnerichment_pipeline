@@ -27,5 +27,5 @@ Two scripts, one dedicated to extraction of cve records from vulnrichment reposi
 This project is provided under an open license, but note that the underlying CISA/MITRE data is subject to their respective policies and terms of use.
 
 ## Links
-1. [[CISA Vulnrichment repository](https://github.com/cisagov/vulnrichment)]
-2.[[CISA CVE Vulnrichment Dataset](https://www.kaggle.com/datasets/junaidmohammad9248/cisa-cve-vulnrichment)]
+1.[CISA Vulnrichment repository(https://github.com/cisagov/vulnrichment)]  
+2.[CISA CVE Vulnrichment Dataset(https://www.kaggle.com/datasets/junaidmohammad9248/cisa-cve-vulnrichment)]
