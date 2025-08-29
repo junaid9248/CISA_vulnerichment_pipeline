@@ -1,6 +1,6 @@
 # **CISA CVE Vulnrichment CI/CD Pipeline**
 ## _Overview_
-This repository contains an end-to-end, fully automated CI/CD pipeline and Python tooling to collect, enrich, and publish a comprehensive CVE dataset to Kaggle for public use that leverages [https://github.com/cisagov/vulnrichment](_CISA's official vulnrichment repository_).
+This repository contains an end-to-end, fully automated CI/CD pipeline and Python tooling to collect, enrich, and publish a comprehensive CVE dataset to Kaggle for public use that leverages _CISA's official vulnrichment repository_.
 
 The result: an up-to-date, business-ready dataset suitable for analytics, reporting, threat modeling, and risk management—published daily to Kaggle.
 Find the dataset here: _https://www.kaggle.com/datasets/junaidmohammad9248/cisa-cve-vulnrichment_
@@ -15,6 +15,16 @@ While working on a project for a business intelligence I wanted to use a cyberse
 
 ## _Features of pipeline_
 ### Python Extraction Scripts
-Two scripts, one dedicated to extraction of cve records from vulnrichment repository and creating a csv dataset for each available year, the second to automate uploading to Kaggle using Kaggle CLI commands
+Two scripts, one dedicated to extraction of cve records from vulnrichment repository and creating a csv dataset for each available year, the second to automate uploading to Kaggle using Kaggle CLI commands.
 
 ### GitHub Actions CI/CD Pipeline
+1. YAML-based orchestration of all data pipeline steps.
+2. Matrix job execution for parallelzied extraction of cve records on a year-to-year basis.
+3. Robust artifact handling to ensure no stale copies are created.
+4. Automated daily execution so latest dataset is available.
+
+## License
+This project is provided under an open license, but note that the underlying CISA/MITRE data is subject to their respective policies and terms of use.
+
+## Links
+1. [https://github.com/cisagov/vulnrichment](#CISA Vulnrichment repository )
