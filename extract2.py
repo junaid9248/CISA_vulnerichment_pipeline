@@ -426,7 +426,7 @@ class cveExtractor:
                         for version in valid_versions:
                             if version in metric:
                                 # Extracting the CVSS v3.1 metrics
-                                cve_entry_template['cvss_version'] = version
+                                cve_entry_template['cvss_version'] = metric[version].get('version', '')
                                 cve_entry_template['base_severity'] = metric[version].get('baseSeverity', '')
                                 cve_entry_template['base_score'] = metric[version].get('baseScore', '')
                                 
@@ -524,22 +524,22 @@ class cveExtractor:
                     cve_entry_template['impacted_vendor'] = vendor
                     cve_entry_template['impacted_products'].append(product)
 
-                    versions_list = affected_item.get('versions', [])  # ← Fixed: versions is a list
+                    versions_list = affected_item.get('versions', []) 
                     for version_item in versions_list:
                         cve_entry_template['vulnerable_versions'].append(version_item.get('version', ''))
 
                 # SOMETIMES extracting metrics from the cna container if adp container has no metrics
                 if "metrics" in cna_container:
                     cna_metrics_container = cna_container.get('metrics', [])
-                                        
+
+                    #Iterrating through the metrics list
                     for metric in cna_metrics_container:
                         valid_versions = ['cvssV3_0', 'cvssV3_1', 'cvssV4_0']
 
                         if version in valid_versions:
                             if version in metric:
-
                                 # Extracting the CVSS  metrics
-                                cve_entry_template['cvss_version'] = version
+                                cve_entry_template['cvss_version'] = metric[version].get('version', '')
                                 cve_entry_template['base_severity'] = metric[version].get('baseSeverity', '')
                                 cve_entry_template['base_score'] = metric[version].get('baseScore', '')
                                 
@@ -642,7 +642,8 @@ if __name__ == "__main__":
         years = [sys.argv[2]]
     else:
         #For local machine 
-        years = extractor.get_years()
+        #years = extractor.get_years()
+        years = ['2010','2011']
     
     for year in years:
         #If we already have a file for this year, remove it as we will be rewriting it

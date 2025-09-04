@@ -21,7 +21,7 @@ __pycache__/
 *.swp
 
 # Test codes
-test1.py
+test3.py
 test2.py
 kaggle_upload.py
 pipeline.yml
