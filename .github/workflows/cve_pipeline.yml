@@ -142,7 +142,7 @@ jobs:
         #Step 4: Combine all artifacts
         - name: Combine all artifacts
           run: |
-            head -n 1 dataset/artifacts/cve_data_2000/cve_data_2000.csv> dataset/cve_data.csv
+            head -n 1 dataset/artifacts/cve_data_2011/cve_data_2011.csv> dataset/cve_data.csv
             tail -n +2 -q dataset/artifacts/cve_data_*/cve_data_*.csv >> dataset/cve_data.csv
             ls -lh dataset/cve_data.csv
 
