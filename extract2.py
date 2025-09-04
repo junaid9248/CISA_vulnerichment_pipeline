@@ -361,6 +361,7 @@ class cveExtractor:
             'cisa_kev_date': '',
 
             #Cvss v3.1 metrics
+            'cvss_version': '',
             'base_score': '',
             'base_severity': '',
             'attack_vector': '',
@@ -417,77 +418,83 @@ class cveExtractor:
                     # Finding the metrics list in the CISA ADP container
                     cisa_adp_metrics_container = cisa_adp_container.get('metrics', [])
 
-                    # Iterating over the metrics list
+                    # Iterating over the metrics list to find CVSS KEV information
                     for metric in cisa_adp_metrics_container:
-                        if 'cvssV3_1' in metric:
-                            # Extracting the CVSS v3.1 metrics
-                            cve_entry_template['base_severity'] = metric['cvssV3_1'].get('baseSeverity', '')
-                            cve_entry_template['base_score'] = metric['cvssV3_1'].get('baseScore', '')
+                        #For cvss v3.1 metrics if they exist
+                        valid_versions = ['cvssV3_0', 'cvssV3_1', 'cvssV4_0']
+
+                        for version in valid_versions:
+                            if version in metric:
+                                # Extracting the CVSS v3.1 metrics
+                                cve_entry_template['cvss_version'] = version
+                                cve_entry_template['base_severity'] = metric[version].get('baseSeverity', '')
+                                cve_entry_template['base_score'] = metric[version].get('baseScore', '')
+                                
+                                # Extract individual metrics if available
+                                if 'attackVector' in metric[version]:
+                                    cve_entry_template['attack_vector'] = metric[version].get('attackVector', '')
+                                if 'attackComplexity' in metric[version]:
+                                    cve_entry_template['attack_complexity'] = metric[version].get('attackComplexity', '')
+                                if 'integrityImpact' in metric[version]:
+                                    cve_entry_template['integrity_impact'] = metric[version].get('integrityImpact', '')
+                                if 'availabilityImpact' in metric[version]:
+                                    cve_entry_template['availability_impact'] = metric[version].get('availabilityImpact', '')
+                                if 'confidentialityImpact' in metric[version]:
+                                    cve_entry_template['confidentiality_impact'] = metric[version].get('confidentialityImpact', '')
+                                if 'privilegesRequired' in metric[version]:
+                                    cve_entry_template['privileges_required'] = metric[version].get('privilegesRequired', '')
+                                if 'userInteraction' in metric[version]:
+                                    cve_entry_template['user_interaction'] = metric[version].get('userInteraction', '')
+                                if 'scope' in metric[version]:
+                                    cve_entry_template['scope'] = metric[version].get('scope', '')
+
+                                #Finding any of the missing metrics
+                                missing_metrics = []
+
+                                for key in ['attack_vector', 'attack_complexity', 'privileges_required', 'user_interaction', 
+                                                    'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
+                                    # Check if the metric is empty
+                                    if not cve_entry_template[key]:
+                                        missing_metrics.append(key)
+
+                                if missing_metrics:
+                                    cvss_vector_string = metric[version].get('vectorString', '')
+                                    logging.warning(f"⚠️ Missing CVSS {version} metrics for {cve_id}: {missing_metrics} in ADP container")
+
+                                    if cvss_vector_string:
+                                        self.vector_string_to_metrics(cve_entry_template ,cvss_vector_string)
+
+                                continue
                             
-                            # Extract individual metrics if available
-                            if 'attackVector' in metric['cvssV3_1']:
-                                cve_entry_template['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
-                            if 'attackComplexity' in metric['cvssV3_1']:
-                                cve_entry_template['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
-                            if 'integrityImpact' in metric['cvssV3_1']:
-                                cve_entry_template['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
-                            if 'availabilityImpact' in metric['cvssV3_1']:
-                                cve_entry_template['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
-                            if 'confidentialityImpact' in metric['cvssV3_1']:
-                                cve_entry_template['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
-                            if 'privilegesRequired' in metric['cvssV3_1']:
-                                cve_entry_template['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
-                            if 'userInteraction' in metric['cvssV3_1']:
-                                cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
-                            if 'scope' in metric['cvssV3_1']:
-                                cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
-
-                            #Finding any of the missing metrics
-                            missing_metrics = []
-
-                            for key in ['attack_vector', 'attack_complexity', 'privileges_required', 'user_interaction', 
-                                                'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
-                                # Check if the metric is empty
-                                if not cve_entry_template[key]:
-                                    missing_metrics.append(key)
-
-                            if missing_metrics:
-                                cvss_v3_1_vector_string = metric['cvssV3_1'].get('vectorString', '')
-                                logging.warning(f"⚠️ Missing CVSS v3.1 metrics for {cve_id}: {missing_metrics} in ADP container")
-
-                                if cvss_v3_1_vector_string:
-                                    self.vector_string_to_metrics(cve_entry_template ,cvss_v3_1_vector_string)
-
-                            continue
-
-                        if 'other' in metric and metric['other'].get('type') == 'kev':
                             # Extracting the CISA KEV information including date added
-                            cve_entry_template['cisa_kev'] = 'TRUE'
-                            cve_entry_template['cisa_kev_date'] = metric['other']['content']['dateAdded']
-                            continue
-
-                        if 'other' in metric and metric['other'].get('type') == 'ssvc':
+                            if 'other' in metric and metric['other'].get('type') == 'kev':
+                                cve_entry_template['cisa_kev'] = 'TRUE'
+                                cve_entry_template['cisa_kev_date'] = metric['other']['content']['dateAdded']
+                                continue
+                            
                             # Extracting the SSVC metrics
-                            ssvc_data_content = metric['other'].get('content', {})
-                            ssvc_data_options = ssvc_data_content.get('options', [])
+                            if 'other' in metric and metric['other'].get('type') == 'ssvc':
+                                ssvc_data_content = metric['other'].get('content', {})
+                                ssvc_data_options = ssvc_data_content.get('options', [])
 
-                            cve_entry_template['ssvc_timestamp'] = ssvc_data_content.get('timestamp', '')
+                                cve_entry_template['ssvc_timestamp'] = ssvc_data_content.get('timestamp', '')
 
-                            for option in ssvc_data_options:
-                                if 'Exploitation' in option:
-                                    cve_entry_template['ssvc_exploitation'] = option['Exploitation']
-                                if 'Automatable' in option:
-                                    cve_entry_template['ssvc_automatable'] = option['Automatable']
-                                if 'Technical Impact' in option:
-                                    cve_entry_template['ssvc_technical_impact'] = option['Technical Impact']
+                                for option in ssvc_data_options:
+                                    if 'Exploitation' in option:
+                                        cve_entry_template['ssvc_exploitation'] = option['Exploitation']
+                                    if 'Automatable' in option:
+                                        cve_entry_template['ssvc_automatable'] = option['Automatable']
+                                    if 'Technical Impact' in option:
+                                        cve_entry_template['ssvc_technical_impact'] = option['Technical Impact']
 
-                            # Calculate SSVC decision if all required fields are present
-                            if cve_entry_template['ssvc_exploitation'] and cve_entry_template['ssvc_automatable'] and cve_entry_template['ssvc_technical_impact']:
-                                cve_entry_template['ssvc_decision'] = self.calculate_ssvc_score(
-                                    cve_entry_template['ssvc_exploitation'],
-                                    cve_entry_template['ssvc_automatable'],
-                                    cve_entry_template['ssvc_technical_impact']
-                                )
+                                # Calculate SSVC decision if all required fields are present
+                                if cve_entry_template['ssvc_exploitation'] and cve_entry_template['ssvc_automatable'] and cve_entry_template['ssvc_technical_impact']:
+                                    cve_entry_template['ssvc_decision'] = self.calculate_ssvc_score(
+                                        cve_entry_template['ssvc_exploitation'],
+                                        cve_entry_template['ssvc_automatable'],
+                                        cve_entry_template['ssvc_technical_impact']
+                                    )
+
 
                     #Finding the problem types in the CISA ADP container
                     cisa_adp_problem_container = cisa_adp_container.get('problemTypes', [])
@@ -524,49 +531,53 @@ class cveExtractor:
                 # SOMETIMES extracting metrics from the cna container if adp container has no metrics
                 if "metrics" in cna_container:
                     cna_metrics_container = cna_container.get('metrics', [])
-
+                                        
                     for metric in cna_metrics_container:
-                        if 'cvssV3_1' in metric:
+                        valid_versions = ['cvssV3_0', 'cvssV3_1', 'cvssV4_0']
 
-                            # Extracting the CVSS v3.1 metrics
-                            cve_entry_template['base_severity'] = metric['cvssV3_1'].get('baseSeverity', '')
-                            cve_entry_template['base_score'] = metric['cvssV3_1'].get('baseScore', '')
-                            
-                            # Extract individual metrics if available
-                            if 'attackVector' in metric['cvssV3_1']:
-                                cve_entry_template['attack_vector'] = metric['cvssV3_1'].get('attackVector', '')
-                            if 'attackComplexity' in metric['cvssV3_1']:
-                                cve_entry_template['attack_complexity'] = metric['cvssV3_1'].get('attackComplexity', '')
-                            if 'integrityImpact' in metric['cvssV3_1']:
-                                cve_entry_template['integrity_impact'] = metric['cvssV3_1'].get('integrityImpact', '')
-                            if 'availabilityImpact' in metric['cvssV3_1']:
-                                cve_entry_template['availability_impact'] = metric['cvssV3_1'].get('availabilityImpact', '')
-                            if 'confidentialityImpact' in metric['cvssV3_1']:
-                                cve_entry_template['confidentiality_impact'] = metric['cvssV3_1'].get('confidentialityImpact', '')
-                            if 'privilegesRequired' in metric['cvssV3_1']:
-                                cve_entry_template['privileges_required'] = metric['cvssV3_1'].get('privilegesRequired', '')
-                            if 'userInteraction' in metric['cvssV3_1']:
-                                cve_entry_template['user_interaction'] = metric['cvssV3_1'].get('userInteraction', '')
-                            if 'scope' in metric['cvssV3_1']:
-                                cve_entry_template['scope'] = metric['cvssV3_1'].get('scope', '')
+                        if version in valid_versions:
+                            if version in metric:
 
-                            # Check for missing metrics
-                            missing_metrics= []
-                            for key in ['attack_vector', 'attack_complexity', 'privileges_required', 'user_interaction', 
-                                                'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
-                                # Check if the metric is empty
-                                if not cve_entry_template[key]:
-                                    missing_metrics.append(key)
+                                # Extracting the CVSS  metrics
+                                cve_entry_template['cvss_version'] = version
+                                cve_entry_template['base_severity'] = metric[version].get('baseSeverity', '')
+                                cve_entry_template['base_score'] = metric[version].get('baseScore', '')
+                                
+                                # Extract individual metrics if available
+                                if 'attackVector' in metric[version]:
+                                    cve_entry_template['attack_vector'] = metric[version].get('attackVector', '')
+                                if 'attackComplexity' in metric[version]:
+                                    cve_entry_template['attack_complexity'] = metric[version].get('attackComplexity', '')
+                                if 'integrityImpact' in metric[version]:
+                                    cve_entry_template['integrity_impact'] = metric[version].get('integrityImpact', '')
+                                if 'availabilityImpact' in metric[version]:
+                                    cve_entry_template['availability_impact'] = metric[version].get('availabilityImpact', '')
+                                if 'confidentialityImpact' in metric[version]:
+                                    cve_entry_template['confidentiality_impact'] = metric[version].get('confidentialityImpact', '')
+                                if 'privilegesRequired' in metric[version]:
+                                    cve_entry_template['privileges_required'] = metric[version].get('privilegesRequired', '')
+                                if 'userInteraction' in metric[version]:
+                                    cve_entry_template['user_interaction'] = metric[version].get('userInteraction', '')
+                                if 'scope' in metric[version]:
+                                    cve_entry_template['scope'] = metric[version].get('scope', '')
 
-                            if missing_metrics:
-                                # Handle missing metrics (e.g., log a warning)
-                                print(f"⚠️ Missing CVSS v3.1 metrics for {cve_id}: {missing_metrics}")
+                                # Check for missing metrics
+                                missing_metrics= []
+                                for key in ['attack_vector', 'attack_complexity', 'privileges_required', 'user_interaction', 
+                                                    'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
+                                    # Check if the metric is empty
+                                    if not cve_entry_template[key]:
+                                        missing_metrics.append(key)
 
-                                cvss_v3_1_vector_string = metric['cvssV3_1'].get('vectorString', '')
-                                if cvss_v3_1_vector_string:
-                                    self.vector_string_to_metrics(cve_entry_template ,cvss_v3_1_vector_string)
+                                if missing_metrics:
+                                    # Handle missing metrics (e.g., log a warning)
+                                    print(f"⚠️ Missing CVSS {version} metrics for {cve_id}: {missing_metrics}")
 
-                            continue
+                                    cvss_vector_string = metric[version].get('vectorString', '')
+                                    if cvss_vector_string:
+                                        self.vector_string_to_metrics(cve_entry_template ,cvss_vector_string)
+
+                                continue
 
                 if 'problemTypes' in cna_container:
                     # Finding the problem types in the CNA container
