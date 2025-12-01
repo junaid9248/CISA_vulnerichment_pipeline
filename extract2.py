@@ -685,8 +685,6 @@ if __name__ == "__main__":
         #For automation using gh actions yaml script
         years = [sys.argv[2]]
     else:
-
-    
         #For local machine 
         #years = extractor.get_years()
         years = ['2025']
@@ -696,6 +694,6 @@ if __name__ == "__main__":
         logging.info(f" Processing year: {year}")    
         extract_data = extractor.get_cve_files_for_year(year)
         #extractor.get_cve_data_json(extract_data)
-        cve_record = extractor.extract_data_for_cve_record(extract_data, 'CVE-2025-9993.json')
-        print(cve_record)
+        #cve_record = extractor.extract_data_for_cve_record(extract_data, 'CVE-2025-9993.json')
+        #print(cve_record)
     
