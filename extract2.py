@@ -107,7 +107,9 @@ class cveExtractor:
             return []
     
     # Method to get all information on CVE file entries for each year directory 
-    def get_cve_files_for_year(self, year: str) -> Dict:        
+    def get_cve_files_for_year(self, year: str) -> Dict:
+
+        # This is the main data structure to hold year data       
         year_data = {'year': year, 'subdirs': {}}  
         
         url = f"{self.base_url}/repos/{self.repo_owner}/{self.repo_name}/contents/{year}"
@@ -122,7 +124,7 @@ class cveExtractor:
 
             if response.status_code == 200:
                 year_response_data = response.json()
-                logging.info(f"📁 Found {len(year_response_data)} subdirectories in {year} year directory")
+                logging.info(f" Found {len(year_response_data)} subdirectories in {year} year directory")
                 
                 # Show what we actually got
                 for item in year_response_data:
@@ -139,17 +141,17 @@ class cveExtractor:
                     year_data['subdirs'][subdir_name] = []
                     
                     subdir_url = f"{self.base_url}/repos/{self.repo_owner}/{self.repo_name}/contents/{year}/{subdir_name}"
-                    logging.info(f"       🌐 Requesting: {subdir_url}")
+                    logging.info(f"Requesting: {subdir_url}")
 
                     subdir_response = self.session.get(subdir_url, params=params)
-                    logging.info(f"       🌐 Subdir response code: {subdir_response.status_code}")
+                    logging.info(f"Subdir response code: {subdir_response.status_code}")
 
                     if self._handle_rate_limit(subdir_response):
                         subdir_response = self.session.get(subdir_url, params=params)
 
                     if subdir_response.status_code == 200:
                         files = subdir_response.json()
-                        logging.info(f"       📄 Found {len(files)} items in {subdir_name}")
+                        logging.info(f"Found {len(files)} items in {subdir_name}")
                         
                         file_count = 0
                         for file_item in files:
@@ -182,6 +184,37 @@ class cveExtractor:
         logging.info(f"✅ Summary: {total_files} total CVE files across {len(year_data['subdirs'])} subdirectories for {year} year added")
 
         return year_data
+    
+    #DEGUGGING METHOD to extract data for a specific CVE file in the year data
+    def extract_data_for_cve_record(self, year_data: Dict, file_name: str):
+        all_subdirs = year_data.get('subdirs', {})
+        print(f'These are all subdirs: {all_subdirs.keys()}')
+
+        download_url = ''
+        for subdir in all_subdirs:
+            for file in all_subdirs[subdir]:
+                if file['name'] == file_name:
+                    download_url = file['download_url']
+        
+        print(f"Downloading CVE record from: {download_url}")
+
+        try:
+            response = self.session.get(download_url)
+        
+            if self._handle_rate_limit(response):
+                response = self.session.get(download_url)
+
+            if response.status_code == 200:
+                logging.info(f"✅ Successfully downloaded {file_name}")
+                cve_data = response.json()
+
+                extracted_data = self.extract_cve_data(cve_data)
+
+                return extracted_data
+
+        except json.JSONDecodeError as e:
+                logging.error(f"❌ JSON parsing error for {file_name}: {e}")
+
     
     # Method to process the cve entry data object by: 
     # 1. Extracting CVE information from provided URL
@@ -288,57 +321,58 @@ class cveExtractor:
         
         try:
             #Splitting the vector string into individual metrics using '/' as separator
-            metrics = vector_string.split('/')[1:]
+            metrics_string_split = vector_string.split('/')[1:]
 
             metrics_new = []
-            for metric in metrics:
+            for metric in metrics_string_split:
                 metrics_new.append(metric.split(':'))
 
             #Converting the list of lists into a dictionary for easier access
-            metrics_dict = dict(metrics_new)
+            dict_metrics = dict(metrics_new)
+
 
             # Parse each metric
-            match metrics_dict.keys()[0]:
+            match dict_metrics.get('AV'):
                 case 'N': cve_entry_template['attack_vector'] = 'NETWORK'
                 case 'A': cve_entry_template['attack_vector'] = 'ADJACENT_NETWORK'
                 case 'L': cve_entry_template['attack_vector'] = 'LOCAL'
                 case 'P': cve_entry_template['attack_vector'] = 'PHYSICAL'
                 case _: cve_entry_template['attack_vector'] = ''
             
-            match metrics_dict.get('AC'):
+            match dict_metrics.get('AC'):
                 case 'L': cve_entry_template['attack_complexity'] = 'LOW'
                 case 'H': cve_entry_template['attack_complexity'] = 'HIGH'
                 case _: cve_entry_template['attack_complexity'] = ''
             
-            match metrics_dict.get('PR'):
+            match dict_metrics.get('PR'):
                 case 'N': cve_entry_template['privileges_required'] = 'NONE'
                 case 'L': cve_entry_template['privileges_required'] = 'LOW'
                 case 'H': cve_entry_template['privileges_required'] = 'HIGH'
                 case _: cve_entry_template['privileges_required'] = ''
             
-            match metrics_dict.get('UI'):
+            match dict_metrics.get('UI'):
                 case 'N': cve_entry_template['user_interaction'] = 'NONE'
                 case 'R': cve_entry_template['user_interaction'] = 'REQUIRED'
                 case _: cve_entry_template['user_interaction'] = ''
             
-            match metrics_dict.get('S'):
+            match dict_metrics.get('S'):
                 case 'U': cve_entry_template['scope'] = 'UNCHANGED'
                 case 'C': cve_entry_template['scope'] = 'CHANGED'
                 case _: cve_entry_template['scope'] = ''
             
-            match metrics_dict.get('C'):
+            match dict_metrics.get('C'):
                 case 'N': cve_entry_template['confidentiality_impact'] = 'NONE'
                 case 'L': cve_entry_template['confidentiality_impact'] = 'LOW'
                 case 'H': cve_entry_template['confidentiality_impact'] = 'HIGH'
                 case _: cve_entry_template['confidentiality_impact'] = ''
             
-            match metrics_dict.get('I'):
+            match dict_metrics.get('I'):
                 case 'N': cve_entry_template['integrity_impact'] = 'NONE'
                 case 'L': cve_entry_template['integrity_impact'] = 'LOW'
                 case 'H': cve_entry_template['integrity_impact'] = 'HIGH'
                 case _: cve_entry_template['integrity_impact'] = ''
             
-            match metrics_dict.get('A'):
+            match dict_metrics.get('A'):
                 case 'N': cve_entry_template['availability_impact'] = 'NONE'
                 case 'L': cve_entry_template['availability_impact'] = 'LOW'
                 case 'H': cve_entry_template['availability_impact'] = 'HIGH'
@@ -402,7 +436,7 @@ class cveExtractor:
             cve_entry_template['updated_date'] = cve_data_json.get('cveMetadata', {}).get('dateUpdated', '')
 
             #THIS IS FOR ADP CONTAINER
-            # Finding the ADP and cna containers in containersarray
+            # Finding the ADP and cna containers in containers array
             if 'adp' in cve_data_json.get('containers', {}):
                 adp_containers = cve_data_json['containers']['adp']
 
@@ -420,12 +454,13 @@ class cveExtractor:
 
                     # Iterating over the metrics list to find CVSS KEV information
                     for metric in cisa_adp_metrics_container:
-                        #For cvss v3.1 metrics if they exist
-                        valid_versions = ['cvssV3_0', 'cvssV3_1', 'cvssV4_0']
+                        #For cvss metrics if they exist
+                        valid_versions = ['cvssV4_0', 'cvssV3_1', 'cvssV3_0', 'cvssV2_0']
+                        available_versions = [available for available in metric.keys() if available in valid_versions]
 
-                        for version in valid_versions:
+                        for version in available_versions:
                             if version in metric:
-                                # Extracting the CVSS v3.1 metrics
+                                # Extracting the CVSS  metrics
                                 cve_entry_template['cvss_version'] = metric[version].get('version', '')
                                 cve_entry_template['base_severity'] = metric[version].get('baseSeverity', '')
                                 cve_entry_template['base_score'] = metric[version].get('baseScore', '')
@@ -533,33 +568,43 @@ class cveExtractor:
                     cna_metrics_container = cna_container.get('metrics', [])
 
                     #Iterrating through the metrics list
-                    for metric in cna_metrics_container:
-                        valid_versions = ['cvssV3_0', 'cvssV3_1', 'cvssV4_0']
+                    valid_versions = ['cvssV4_0', 'cvssV3_1', 'cvssV3_0', 'cvssV2_0']
+                    available_versions = []
 
-                        if version in valid_versions:
-                            if version in metric:
+                    for metric in cna_metrics_container:
+
+                        if isinstance(metric, dict):
+                            for key in metric.keys():
+                                if key in valid_versions:
+                                    available_versions.append(key)
+
+                        version_key = list(metric.keys())[0]
+
+                        if version_key in metric:
+                            if version_key in available_versions:
                                 # Extracting the CVSS  metrics
-                                cve_entry_template['cvss_version'] = metric[version].get('version', '')
-                                cve_entry_template['base_severity'] = metric[version].get('baseSeverity', '')
-                                cve_entry_template['base_score'] = metric[version].get('baseScore', '')
+                                cve_entry_template['cvss_version'] = metric[version_key].get('version', '')
+                                cve_entry_template['base_severity'] = metric[version_key].get('baseSeverity', '')
+                                cve_entry_template['base_score'] = metric[version_key].get('baseScore', '')
+                                cvss_vector_string = metric[version_key].get('vectorString', '')
                                 
                                 # Extract individual metrics if available
-                                if 'attackVector' in metric[version]:
-                                    cve_entry_template['attack_vector'] = metric[version].get('attackVector', '')
-                                if 'attackComplexity' in metric[version]:
-                                    cve_entry_template['attack_complexity'] = metric[version].get('attackComplexity', '')
-                                if 'integrityImpact' in metric[version]:
-                                    cve_entry_template['integrity_impact'] = metric[version].get('integrityImpact', '')
-                                if 'availabilityImpact' in metric[version]:
-                                    cve_entry_template['availability_impact'] = metric[version].get('availabilityImpact', '')
-                                if 'confidentialityImpact' in metric[version]:
-                                    cve_entry_template['confidentiality_impact'] = metric[version].get('confidentialityImpact', '')
-                                if 'privilegesRequired' in metric[version]:
-                                    cve_entry_template['privileges_required'] = metric[version].get('privilegesRequired', '')
-                                if 'userInteraction' in metric[version]:
-                                    cve_entry_template['user_interaction'] = metric[version].get('userInteraction', '')
-                                if 'scope' in metric[version]:
-                                    cve_entry_template['scope'] = metric[version].get('scope', '')
+                                if 'attackVector' in metric[version_key]:
+                                    cve_entry_template['attack_vector'] = metric[version_key].get('attackVector', '')
+                                if 'attackComplexity' in metric[version_key]:
+                                    cve_entry_template['attack_complexity'] = metric[version_key].get('attackComplexity', '')
+                                if 'integrityImpact' in metric[version_key]:
+                                    cve_entry_template['integrity_impact'] = metric[version_key].get('integrityImpact', '')
+                                if 'availabilityImpact' in metric[version_key]:
+                                    cve_entry_template['availability_impact'] = metric[version_key].get('availabilityImpact', '')
+                                if 'confidentialityImpact' in metric[version_key]:
+                                    cve_entry_template['confidentiality_impact'] = metric[version_key].get('confidentialityImpact', '')
+                                if 'privilegesRequired' in metric[version_key]:
+                                    cve_entry_template['privileges_required'] = metric[version_key].get('privilegesRequired', '')
+                                if 'userInteraction' in metric[version_key]:
+                                    cve_entry_template['user_interaction'] = metric[version_key].get('userInteraction', '')
+                                if 'scope' in metric[version_key]:
+                                    cve_entry_template['scope'] = metric[version_key].get('scope', '')
 
                                 # Check for missing metrics
                                 missing_metrics= []
@@ -571,9 +616,8 @@ class cveExtractor:
 
                                 if missing_metrics:
                                     # Handle missing metrics (e.g., log a warning)
-                                    print(f"⚠️ Missing CVSS {version} metrics for {cve_id}: {missing_metrics}")
+                                    print(f"⚠️ Missing CVSS {version_key} metrics for {cve_id}: {missing_metrics}")
 
-                                    cvss_vector_string = metric[version].get('vectorString', '')
                                     if cvss_vector_string:
                                         self.vector_string_to_metrics(cve_entry_template ,cvss_vector_string)
 
@@ -641,12 +685,17 @@ if __name__ == "__main__":
         #For automation using gh actions yaml script
         years = [sys.argv[2]]
     else:
+
+    
         #For local machine 
         #years = extractor.get_years()
-        years = ['2010','2011']
+        years = ['2025']
     
     for year in years:
         #If we already have a file for this year, remove it as we will be rewriting it
         logging.info(f" Processing year: {year}")    
         extract_data = extractor.get_cve_files_for_year(year)
-        extractor.get_cve_data_json(extract_data)
+        #extractor.get_cve_data_json(extract_data)
+        cve_record = extractor.extract_data_for_cve_record(extract_data, 'CVE-2025-9993.json')
+        print(cve_record)
+    
