@@ -185,6 +185,52 @@ class cveExtractor:
 
         return year_data
     
+    #DEGUGGING METHOD to extract data for a specific CVE file by its name
+    def extract_cve_record(self, file_name: str):
+        logging.info(f' Extracting data for CVE record: {file_name}')
+
+        file_year = file_name.split('-')[1]
+        file_subdir = file_name.split('-')[2][0] + 'xxx'
+
+        print(f' File year: {file_year}, subdir: {file_subdir}')
+
+
+        file_url = f"{self.base_url}/repos/{self.repo_owner}/{self.repo_name}/contents/{file_year}/{file_subdir}/{file_name}"
+        params = {'ref': self.branch}
+
+        try:
+            response = self.session.get(file_url, params=params)
+            logging.info(f" Response status for year {year}: {response.status_code}")
+
+            if self._handle_rate_limit(response):
+                response = self.session.get(file_url, params=params)
+            
+            if response.status_code == 200:
+                logging.info(f"✅ Successfully extracted values for {file_name}")
+                cve_data = response.json()
+
+                file_download_url =  cve_data.get('download_url', '')
+
+            response = self.session.get(file_download_url)
+
+            if self._handle_rate_limit(response):
+                response = self.session.get(file_download_url)
+
+            if response.status_code == 200:
+                logging.info(f"✅ Successfully downloaded {file_name}")
+                cve_data = response.json()
+
+                extracted_data = self.extract_cve_data(cve_data)
+
+                return extracted_data
+
+
+
+        except requests.RequestException as e:
+            logging.error(f"❌ Network error: {e}")
+            return None
+
+    
     #DEGUGGING METHOD to extract data for a specific CVE file in the year data
     def extract_data_for_cve_record(self, year_data: Dict, file_name: str):
         all_subdirs = year_data.get('subdirs', {})
@@ -429,121 +475,132 @@ class cveExtractor:
         }
  
         try:
+            # 1. FINDING TOP LEVEL METADATA CONTAINER
             cve_id = cve_data_json.get('cveMetadata', {}).get('cveId', '')
             #Extract CVE Id, date publsihed and date updated values
             cve_entry_template['cve_id'] = cve_id
             cve_entry_template['published_date'] = cve_data_json.get('cveMetadata', {}).get('datePublished', '')
             cve_entry_template['updated_date'] = cve_data_json.get('cveMetadata', {}).get('dateUpdated', '')
 
-            #THIS IS FOR ADP CONTAINER
-            # Finding the ADP and cna containers in containers array
+            # 2. FINDING THE ADP CONTAINER FROM TOP LEVEL 'CONTAINERS' CONTAINER
             if 'adp' in cve_data_json.get('containers', {}):
-                adp_containers = cve_data_json['containers']['adp']
+                # 2.1. Searching for the ADP container
+                adp_containers = cve_data_json['containers'].get('adp', [])
 
-                cisa_adp_container = None
+                cisa_adp_vulnrcihment_container = None
 
+                # 2.2. Iterating over all ADP containers to find the specific CISA ADP vulnerichment container
                 for adp_container in adp_containers:
-                    # Find the specific CISA ADP container that has metrics
                     if adp_container.get('title') == "CISA ADP Vulnrichment":
-                        cisa_adp_container = adp_container
-                        
+                        cisa_adp_vulnrcihment_container = adp_container
+
+                    #logging.info(f'This is the adp container: {cisa_adp_vulnrcihment_container}')
                 
-                if cisa_adp_container:
-                    # Finding the metrics list in the CISA ADP container
-                    cisa_adp_metrics_container = cisa_adp_container.get('metrics', [])
-
-                    # Iterating over the metrics list to find CVSS KEV information
-                    for metric in cisa_adp_metrics_container:
-                        #For cvss metrics if they exist
+                if cisa_adp_vulnrcihment_container:
+                    # 2.2.1. Getting the metrics list in the CISA ADP vulnerichment container
+                    cisa_adp_vulnrichment_metrics_container = cisa_adp_vulnrcihment_container.get('metrics', [])
+                    # 2.2.2. Getting the problemTypes list in the CISA ADP vulnerichment container
+                    cisa_adp_vulnrichment_problem_container = cisa_adp_vulnrcihment_container.get('problemTypes', [])
+                    
+                    #logging.info(f'This is the metrics container: {cisa_adp_vulnrichment_metrics_container }')
+                    if cisa_adp_vulnrichment_metrics_container:
+                        #2.2.1.1. Iterrating through the CISA ADP metrics list to find CVSS metrics
                         valid_versions = ['cvssV4_0', 'cvssV3_1', 'cvssV3_0', 'cvssV2_0']
-                        available_versions = [available for available in metric.keys() if available in valid_versions]
+                        all_versions_found = set()
 
-                        for version in available_versions:
-                            if version in metric:
-                                # Extracting the CVSS  metrics
-                                cve_entry_template['cvss_version'] = metric[version].get('version', '')
-                                cve_entry_template['base_severity'] = metric[version].get('baseSeverity', '')
-                                cve_entry_template['base_score'] = metric[version].get('baseScore', '')
-                                
+                        for metric in cisa_adp_vulnrichment_metrics_container:
+                            if isinstance(metric,  dict):
+                                all_versions_found.update([version_key for version_key in valid_versions if version_key in metric]) 
+                                logging.info(f" Available CVSS versions in ADP container for {cve_id}: {all_versions_found}")
+
+                            version_key = next((str(version_key) for version_key in valid_versions if version_key in all_versions_found), None)
+                            logging.info(f" The latest CVSS version_key key in ADP metrics container is  {version_key} for {cve_id}")
+
+                            # Here we are looking for the CVSS version an the metrics
+                            if version_key in metric:
+                                cve_entry_template['cvss_version'] = metric[version_key].get('version', '')
+                                cve_entry_template['base_severity'] = metric[version_key].get('baseSeverity', '')
+                                cve_entry_template['base_score'] = metric[version_key].get('baseScore', '')
+
                                 # Extract individual metrics if available
-                                if 'attackVector' in metric[version]:
-                                    cve_entry_template['attack_vector'] = metric[version].get('attackVector', '')
-                                if 'attackComplexity' in metric[version]:
-                                    cve_entry_template['attack_complexity'] = metric[version].get('attackComplexity', '')
-                                if 'integrityImpact' in metric[version]:
-                                    cve_entry_template['integrity_impact'] = metric[version].get('integrityImpact', '')
-                                if 'availabilityImpact' in metric[version]:
-                                    cve_entry_template['availability_impact'] = metric[version].get('availabilityImpact', '')
-                                if 'confidentialityImpact' in metric[version]:
-                                    cve_entry_template['confidentiality_impact'] = metric[version].get('confidentialityImpact', '')
-                                if 'privilegesRequired' in metric[version]:
-                                    cve_entry_template['privileges_required'] = metric[version].get('privilegesRequired', '')
-                                if 'userInteraction' in metric[version]:
-                                    cve_entry_template['user_interaction'] = metric[version].get('userInteraction', '')
-                                if 'scope' in metric[version]:
-                                    cve_entry_template['scope'] = metric[version].get('scope', '')
+                                if 'attackVector' in metric[version_key]:
+                                    cve_entry_template['attack_vector'] = metric[version_key].get('attackVector', '')
+                                if 'attackComplexity' in metric[version_key]:
+                                    cve_entry_template['attack_complexity'] = metric[version_key].get('attackComplexity', '')
+                                if 'integrityImpact' in metric[version_key]:
+                                    cve_entry_template['integrity_impact'] = metric[version_key].get('integrityImpact', '')
+                                if 'availabilityImpact' in metric[version_key]:
+                                    cve_entry_template['availability_impact'] = metric[version_key].get('availabilityImpact', '')
+                                if 'confidentialityImpact' in metric[version_key]:
+                                    cve_entry_template['confidentiality_impact'] = metric[version_key].get('confidentialityImpact', '')
+                                if 'privilegesRequired' in metric[version_key]:
+                                    cve_entry_template['privileges_required'] = metric[version_key].get('privilegesRequired', '')
+                                if 'userInteraction' in metric[version_key]:
+                                    cve_entry_template['user_interaction'] = metric[version_key].get('userInteraction', '')
+                                if 'scope' in metric[version_key]:
+                                    cve_entry_template['scope'] = metric[version_key].get('scope', '')
 
                                 #Finding any of the missing metrics
                                 missing_metrics = []
-
                                 for key in ['attack_vector', 'attack_complexity', 'privileges_required', 'user_interaction', 
-                                                    'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
+                                                'scope', 'confidentiality_impact', 'integrity_impact', 'availability_impact']:
                                     # Check if the metric is empty
                                     if not cve_entry_template[key]:
                                         missing_metrics.append(key)
 
                                 if missing_metrics:
-                                    cvss_vector_string = metric[version].get('vectorString', '')
-                                    logging.warning(f"⚠️ Missing CVSS {version} metrics for {cve_id}: {missing_metrics} in ADP container")
+                                    cvss_vector_string = metric[version_key].get('vectorString', '')
+                                    logging.warning(f"⚠️ Missing CVSS {version_key} metrics for {cve_id}: {missing_metrics} in ADP container")
 
                                     if cvss_vector_string:
                                         self.vector_string_to_metrics(cve_entry_template ,cvss_vector_string)
+                        
+                            # 2.2.1.2. Extracting CISA SSVC metrics from CISA ADP vulnerichment metrics 'other' containers
+                            if 'other' in metric:
+                                cisa_adp_vulnrichment_metrics_other_container = metric['other']
+                                type_other = cisa_adp_vulnrichment_metrics_other_container.get('type', '')
+                                content_other = cisa_adp_vulnrichment_metrics_other_container.get('content', [])
+                                # For the other container with type ssvvc
+                                if type_other =='ssvc':
+                                    cve_entry_template['ssvc_timestamp'] = content_other.get('timestamp', '')
 
-                                continue
+                                    options = content_other.get('options', [])
+
+                                    for option in options:
+                                        if 'Exploitation' in option:
+                                            cve_entry_template['ssvc_exploitation'] = option.get('Exploitation', '')
+                                        if 'Automatable' in option:
+                                            cve_entry_template['ssvc_automatable'] = option.get('Automatable', '')
+                                        if 'Technical Impact' in option:
+                                            cve_entry_template['ssvc_technical_impact'] = option.get('Technical Impact', '')
+                                    
+                                    # Calculate SSVC decision if all required fields are present
+                                    if cve_entry_template['ssvc_exploitation'] and cve_entry_template['ssvc_automatable'] and cve_entry_template['ssvc_technical_impact']:
+                                        cve_entry_template['ssvc_decision'] = self.calculate_ssvc_score(
+                                            cve_entry_template['ssvc_exploitation'],
+                                            cve_entry_template['ssvc_automatable'],
+                                            cve_entry_template['ssvc_technical_impact']
+                                        )
+                                # For the other container with type kev
+                                elif type_other == 'kev':
+                                    cve_entry_template['cisa_kev'] = 'TRUE'
+                                    cve_entry_template['cisa_kev_date'] = content_other.get('dateAdded', '')
+
+                    # 2.2.2. Finding the problem types container in the CISA ADP container
+                    if cisa_adp_vulnrichment_problem_container:
+                        for problem_type in cisa_adp_vulnrichment_problem_container:
+                          #Extract the descriptions list from the problemTypes list in the adp container
+                          descriptions = problem_type.get('descriptions', [])
+
+                          if descriptions:
+                              for description in descriptions:
+                                  if description.get('type') == 'CWE':
+                                      cve_entry_template['cwe_number'] = description.get('cweId', '')
+                                      cve_entry_template['cwe_description'] = description.get('description', '')
+                                      break
+                    logging.info(f'This is the CVE entry template: {cve_entry_template}')
+
                             
-                            # Extracting the CISA KEV information including date added
-                            if 'other' in metric and metric['other'].get('type') == 'kev':
-                                cve_entry_template['cisa_kev'] = 'TRUE'
-                                cve_entry_template['cisa_kev_date'] = metric['other']['content']['dateAdded']
-                                continue
-                            
-                            # Extracting the SSVC metrics
-                            if 'other' in metric and metric['other'].get('type') == 'ssvc':
-                                ssvc_data_content = metric['other'].get('content', {})
-                                ssvc_data_options = ssvc_data_content.get('options', [])
-
-                                cve_entry_template['ssvc_timestamp'] = ssvc_data_content.get('timestamp', '')
-
-                                for option in ssvc_data_options:
-                                    if 'Exploitation' in option:
-                                        cve_entry_template['ssvc_exploitation'] = option['Exploitation']
-                                    if 'Automatable' in option:
-                                        cve_entry_template['ssvc_automatable'] = option['Automatable']
-                                    if 'Technical Impact' in option:
-                                        cve_entry_template['ssvc_technical_impact'] = option['Technical Impact']
-
-                                # Calculate SSVC decision if all required fields are present
-                                if cve_entry_template['ssvc_exploitation'] and cve_entry_template['ssvc_automatable'] and cve_entry_template['ssvc_technical_impact']:
-                                    cve_entry_template['ssvc_decision'] = self.calculate_ssvc_score(
-                                        cve_entry_template['ssvc_exploitation'],
-                                        cve_entry_template['ssvc_automatable'],
-                                        cve_entry_template['ssvc_technical_impact']
-                                    )
-
-
-                    #Finding the problem types in the CISA ADP container
-                    cisa_adp_problem_container = cisa_adp_container.get('problemTypes', [])
-
-                    for problem_type in cisa_adp_problem_container:
-                        #Extract the descriptions list from the problemTypes list in the adp container
-                        descriptions = problem_type.get('descriptions', [])
-
-                        if descriptions:
-                            for description in descriptions:
-                                if description.get('type') == 'CWE':
-                                    cve_entry_template['cwe_number'] = description.get('cweId', '')
-                                    cve_entry_template['cwe_description'] = description.get('description', '')
-                                    break
 
             #THIS IS FOR CNA CONTAINER
             if 'cna' in cve_data_json.get('containers', {}):
@@ -565,46 +622,58 @@ class cveExtractor:
 
                 # SOMETIMES extracting metrics from the cna container if adp container has no metrics
                 if "metrics" in cna_container:
+                    #Fetch the mertics list from the cna container
                     cna_metrics_container = cna_container.get('metrics', [])
-
+                    
                     #Iterrating through the metrics list
-                    valid_versions = ['cvssV4_0', 'cvssV3_1', 'cvssV3_0', 'cvssV2_0']
-                    available_versions = []
+                    valid_versions1 = ['cvssV4_0', 'cvssV3_1', 'cvssV3_0', 'cvssV2_0']
+
+                    all_versions_found1 = set()
 
                     for metric in cna_metrics_container:
-
                         if isinstance(metric, dict):
-                            for key in metric.keys():
-                                if key in valid_versions:
-                                    available_versions.append(key)
+                            all_versions_found1.update([version for version in valid_versions1 if version in metric])
+                            logging.info(f" Available CVSS versions in CNA container for {cve_id}: {all_versions_found}")
+                    
+                    version_key1 = next((version for version in valid_versions1 if version in all_versions_found1), None)
+                    logging.info(f" The latest CVSS version key in CNA metrics container is  {version_key1} for {cve_id}")  
+                    
+                    #iterate over all the metrics in the metrics container
+                    for metric in cna_metrics_container:
+                        logging.info(f" Processing metric in CNA container for {cve_id}: {metric.keys()}")
 
-                        version_key = list(metric.keys())[0]
+                        #if not isinstance(metric, dict) or not isinstance(metric, list):
+                            #continue
 
-                        if version_key in metric:
-                            if version_key in available_versions:
+
+                        #Checking if the version key is in the metric
+                        if version_key1 in metric:
+                            logging.info(f" Extracting CVSS {version_key1} metrics from CNA container for {cve_id}")
+
+                            if version_key1 in valid_versions:
                                 # Extracting the CVSS  metrics
-                                cve_entry_template['cvss_version'] = metric[version_key].get('version', '')
-                                cve_entry_template['base_severity'] = metric[version_key].get('baseSeverity', '')
-                                cve_entry_template['base_score'] = metric[version_key].get('baseScore', '')
-                                cvss_vector_string = metric[version_key].get('vectorString', '')
+                                cve_entry_template['cvss_version'] = metric[version_key1].get('version', '')
+                                cve_entry_template['base_severity'] = metric[version_key1].get('baseSeverity', '')
+                                cve_entry_template['base_score'] = metric[version_key1].get('baseScore', '')
+                                cvss_vector_string = metric[version_key1].get('vectorString', '')
                                 
                                 # Extract individual metrics if available
-                                if 'attackVector' in metric[version_key]:
-                                    cve_entry_template['attack_vector'] = metric[version_key].get('attackVector', '')
-                                if 'attackComplexity' in metric[version_key]:
-                                    cve_entry_template['attack_complexity'] = metric[version_key].get('attackComplexity', '')
-                                if 'integrityImpact' in metric[version_key]:
-                                    cve_entry_template['integrity_impact'] = metric[version_key].get('integrityImpact', '')
-                                if 'availabilityImpact' in metric[version_key]:
-                                    cve_entry_template['availability_impact'] = metric[version_key].get('availabilityImpact', '')
-                                if 'confidentialityImpact' in metric[version_key]:
-                                    cve_entry_template['confidentiality_impact'] = metric[version_key].get('confidentialityImpact', '')
-                                if 'privilegesRequired' in metric[version_key]:
-                                    cve_entry_template['privileges_required'] = metric[version_key].get('privilegesRequired', '')
-                                if 'userInteraction' in metric[version_key]:
-                                    cve_entry_template['user_interaction'] = metric[version_key].get('userInteraction', '')
-                                if 'scope' in metric[version_key]:
-                                    cve_entry_template['scope'] = metric[version_key].get('scope', '')
+                                if 'attackVector' in metric[version_key1]:
+                                    cve_entry_template['attack_vector'] = metric[version_key1].get('attackVector', '')
+                                if 'attackComplexity' in metric[version_key1]:
+                                    cve_entry_template['attack_complexity'] = metric[version_key1].get('attackComplexity', '')
+                                if 'integrityImpact' in metric[version_key1]:
+                                    cve_entry_template['integrity_impact'] = metric[version_key1].get('integrityImpact', '')
+                                if 'availabilityImpact' in metric[version_key1]:
+                                    cve_entry_template['availability_impact'] = metric[version_key1].get('availabilityImpact', '')
+                                if 'confidentialityImpact' in metric[version_key1]:
+                                    cve_entry_template['confidentiality_impact'] = metric[version_key1].get('confidentialityImpact', '')
+                                if 'privilegesRequired' in metric[version_key1]:
+                                    cve_entry_template['privileges_required'] = metric[version_key1].get('privilegesRequired', '')
+                                if 'userInteraction' in metric[version_key1]:
+                                    cve_entry_template['user_interaction'] = metric[version_key1].get('userInteraction', '')
+                                if 'scope' in metric[version_key1]:
+                                    cve_entry_template['scope'] = metric[version_key1].get('scope', '')
 
                                 # Check for missing metrics
                                 missing_metrics= []
@@ -616,7 +685,7 @@ class cveExtractor:
 
                                 if missing_metrics:
                                     # Handle missing metrics (e.g., log a warning)
-                                    print(f"⚠️ Missing CVSS {version_key} metrics for {cve_id}: {missing_metrics}")
+                                    print(f"⚠️ Missing CVSS {version_key1} metrics for {cve_id}: {missing_metrics}")
 
                                     if cvss_vector_string:
                                         self.vector_string_to_metrics(cve_entry_template ,cvss_vector_string)
@@ -637,7 +706,7 @@ class cveExtractor:
                                 break
 
                 #print(f"✅ Successfully extracted data for {cve_id}")
-                return cve_entry_template
+                #return cve_entry_template
 
         except Exception as e:
             logging.warning(f"❌ Error in extract_cve_data: {e}")
@@ -692,9 +761,9 @@ if __name__ == "__main__":
     for year in years:
         #If we already have a file for this year, remove it as we will be rewriting it
         logging.info(f" Processing year: {year}")    
-        extract_data = extractor.get_cve_files_for_year(year)
-        extractor.get_cve_data_json(extract_data)
-        
-        #cve_record = extractor.extract_data_for_cve_record(extract_data, 'CVE-2025-9993.json')
-        #print(cve_record)
+        #extract_data = extractor.get_cve_files_for_year(year)
+        #extractor.get_cve_data_json(extract_data)
+
+        cve_record = extractor.extract_cve_record('CVE-2012-1856.json')
+        print(cve_record)
     
