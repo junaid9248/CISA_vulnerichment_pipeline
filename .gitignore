@@ -27,6 +27,5 @@ kaggle_upload.py
 pipeline.yml
 
 # Temporary files
-dataset/
 
 

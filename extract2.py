@@ -779,18 +779,26 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         #For automation using gh actions yaml script
-        years = [sys.argv[2]]
+        args = list(sys.argv[2].split(','))
+        #arg1 = [sys.argv[2]]
+
+        for arg in args:
+            logging.info(f" Processing year: {arg}")
+            extract_data = extractor.get_cve_files_for_year(arg)
+            extractor.get_cve_data_json(extract_data)
+
+
     else:
         #For local machine 
         years = extractor.get_years()
         years = ['2012']
     
-    for year in years:
-        #If we already have a file for this year, remove it as we will be rewriting it
-        logging.info(f" Processing year: {year}")    
-        #extract_data = extractor.get_cve_files_for_year(year)
-        #extractor.get_cve_data_json(extract_data)
+        for year in years:
+            #If we already have a file for this year, remove it as we will be rewriting it
+            logging.info(f" Processing year: {year}")    
+            extract_data = extractor.get_cve_files_for_year(year)
+            extractor.get_cve_data_json(extract_data)
 
-        cve_record = extractor.extract_cve_record('CVE-2012-0003.json')
-        print(cve_record)
+            #cve_record = extractor.extract_cve_record('CVE-2012-0003.json')
+            #print(cve_record)
     
