@@ -491,16 +491,28 @@ class cveExtractor:
 
                 # 2.2. Iterating over all ADP containers to find the specific CISA ADP vulnerichment container
                 for adp_container in adp_containers:
+
                     if adp_container.get('title') == "CISA ADP Vulnrichment":
                         cisa_adp_vulnrcihment_container = adp_container
 
-                    #logging.info(f'This is the adp container: {cisa_adp_vulnrcihment_container}')
+                    # logging.info(f'These are all the adp containers: {all_adp_containers}')
                 
                 if cisa_adp_vulnrcihment_container:
+
+                    all_adp_vulnrichment_containers = set()
+
+                    for container in cisa_adp_vulnrcihment_container:
+                        all_adp_vulnrichment_containers.update(container)
+                    
+                    logging.info(f'All containers in the ADP vulnrichment container: {all_adp_vulnrichment_containers}')
+
                     # 2.2.1. Getting the metrics list in the CISA ADP vulnerichment container
                     cisa_adp_vulnrichment_metrics_container = cisa_adp_vulnrcihment_container.get('metrics', [])
                     # 2.2.2. Getting the problemTypes list in the CISA ADP vulnerichment container
                     cisa_adp_vulnrichment_problem_container = cisa_adp_vulnrcihment_container.get('problemTypes', [])
+                    # Getting the affected items list in CISA ADP vulnerichmenet container
+                    cisa_adp_vulnrcihment_affected_container = cisa_adp_vulnrcihment_container.get('affected', [])
+
                     
                     #logging.info(f'This is the metrics container: {cisa_adp_vulnrichment_metrics_container }')
                     if cisa_adp_vulnrichment_metrics_container:
@@ -554,12 +566,15 @@ class cveExtractor:
 
                                     if cvss_vector_string:
                                         self.vector_string_to_metrics(cve_entry_template ,cvss_vector_string)
+
+                                    continue
                         
                             # 2.2.1.2. Extracting CISA SSVC metrics from CISA ADP vulnerichment metrics 'other' containers
                             if 'other' in metric:
                                 cisa_adp_vulnrichment_metrics_other_container = metric['other']
                                 type_other = cisa_adp_vulnrichment_metrics_other_container.get('type', '')
                                 content_other = cisa_adp_vulnrichment_metrics_other_container.get('content', [])
+
                                 # For the other container with type ssvvc
                                 if type_other =='ssvc':
                                     cve_entry_template['ssvc_timestamp'] = content_other.get('timestamp', '')
@@ -598,13 +613,25 @@ class cveExtractor:
                                       cve_entry_template['cwe_number'] = description.get('cweId', '')
                                       cve_entry_template['cwe_description'] = description.get('description', '')
                                       break
-                    logging.info(f'This is the CVE entry template: {cve_entry_template}')
 
+                    # 2.2.3. Finding the affected products if they exist
+                    if cisa_adp_vulnrcihment_affected_container:
+                        #logging.info(f'The affected container exists in adp')
+                        for container in cisa_adp_vulnrcihment_affected_container:
+
+                            cve_entry_template['impacted_vendor'] = container.get('vendor', '')
+                            cve_entry_template['impacted_products'].append(container.get('product', ''))
                             
+                            versions_list = container.get('versions', [])
+                            for version in versions_list:
+                                cve_entry_template['vulnerable_versions'].append(version.get('version', ''))
+                    
+                    #logging.info(f'This is the CVE entry template: {cve_entry_template}')
+                                
 
-            #THIS IS FOR CNA CONTAINER
+            # 3. THIS IS FOR THE CNA CONTAINER
             if 'cna' in cve_data_json.get('containers', {}):
-                #Finding the cna container in containers array
+                #3.1. Finding the cna container in containers array
                 cna_container = cve_data_json['containers']['cna']
 
                 affected_list = cna_container.get('affected', [])
@@ -705,8 +732,8 @@ class cveExtractor:
                                 cve_entry_template['cwe_description'] = description.get('description', '')
                                 break
 
-                #print(f"✅ Successfully extracted data for {cve_id}")
-                #return cve_entry_template
+                print(f"✅ Successfully extracted data for {cve_id}")
+                return cve_entry_template
 
         except Exception as e:
             logging.warning(f"❌ Error in extract_cve_data: {e}")
@@ -756,7 +783,7 @@ if __name__ == "__main__":
     else:
         #For local machine 
         years = extractor.get_years()
-        years = ['2025']
+        years = ['2012']
     
     for year in years:
         #If we already have a file for this year, remove it as we will be rewriting it
@@ -764,6 +791,6 @@ if __name__ == "__main__":
         #extract_data = extractor.get_cve_files_for_year(year)
         #extractor.get_cve_data_json(extract_data)
 
-        cve_record = extractor.extract_cve_record('CVE-2012-1856.json')
+        cve_record = extractor.extract_cve_record('CVE-2012-0003.json')
         print(cve_record)
     
