@@ -20,7 +20,9 @@ GITHUB_TOKEN = os.getenv('GH_TOKEN')
 
 class cveExtractor:
 
-    def __init__(self, token: Optional[str] = None, branch: str = 'develop'):
+    def __init__(self,  isLocal: bool = False, branch: str = 'develop', token: Optional[str] = None):
+
+        self.isLocal = isLocal
 
         self.branch = branch
         self.base_url = "https://api.github.com"
@@ -744,11 +746,17 @@ class cveExtractor:
     def write_to_year_csv(self, cve_template, year):
         """Write CVE data to CSV file in the same directory as the script"""
         try:
+            if self.isLocal == True:
+                dataset_dir_path = os.path.join(os.getcwd(), 'dataset_local')
+                self.isLocal
+            else:
+                dataset_dir_path = os.path.join(os.getcwd(), 'dataset')
+
             # Get the directory where the script is located
-            dataset_dir_path = os.path.join(os.getcwd(), 'dataset')
             os.makedirs(dataset_dir_path, exist_ok=True)
 
             csv_file_path = os.path.join(dataset_dir_path, f'cve_data_{year}.csv')
+            logging.info(f'This is the join path for given file: {csv_file_path}')
         
             # Convert lists to strings for CSV
             if isinstance(cve_template['impacted_products'], list):
@@ -774,13 +782,13 @@ class cveExtractor:
        
 if __name__ == "__main__":
     
-    extractor = cveExtractor()
-    years = []
-
     if len(sys.argv) > 1:
         #For automation using gh actions yaml script
+        isLocal1 = False     
         args = list(sys.argv[2].split(','))
-        #arg1 = [sys.argv[2]]
+
+        extractor = cveExtractor(isLocal1)
+        logging.info('Called automation function')
 
         for arg in args:
             logging.info(f" Processing year: {arg}")
@@ -789,9 +797,14 @@ if __name__ == "__main__":
 
 
     else:
-        #For local machine 
-        years = extractor.get_years()
-        years = ['2012']
+        #For local machine
+        isLocal = True
+        extractor = cveExtractor(isLocal)
+        logging.info('Called local function')
+
+
+        #years = extractor.get_years()
+        years = ['2002']
     
         for year in years:
             #If we already have a file for this year, remove it as we will be rewriting it
@@ -801,4 +814,5 @@ if __name__ == "__main__":
 
             #cve_record = extractor.extract_cve_record('CVE-2012-0003.json')
             #print(cve_record)
+
     
