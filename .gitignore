@@ -24,7 +24,7 @@ __pycache__/
 test3.py
 test2.py
 kaggle_upload.py
-pipeline.yml
+cve_pipeline.yml
 
 # Local dataset 
 dataset_local/

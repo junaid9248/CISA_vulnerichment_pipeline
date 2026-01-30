@@ -13,7 +13,7 @@ def main(arguments):
             years = years_string.split(',')
         elif arguments.run:
             years = get_years()
-            
+
     if years:
         logging.info(f'Starting extraction process for years {years}')
 
@@ -39,6 +39,10 @@ if __name__ == '__main__':
         nargs='?',
         type=str,
         help='Comma-separated list of years for testing purposes'
+    )
+
+    argparser.add_argument(
+        '--upload'
     )
     arguments = argparser.parse_args()
 
