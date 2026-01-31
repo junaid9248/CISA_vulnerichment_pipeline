@@ -211,7 +211,7 @@ def get_cve_files_for_year(year: str) -> Dict:
             logging.info(f" Found {len(year_response_data)} subdirectories in {year} year directory")
             
             for item in year_response_data:
-                logging.info(f"- {item['name']}")
+                logging.info(f"-   {item['name']}")
 
             # Process directories only
             subdirs = [item for item in year_response_data if item['type'] == 'dir']
