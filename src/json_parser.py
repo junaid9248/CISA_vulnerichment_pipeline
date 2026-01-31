@@ -163,7 +163,7 @@ def vector_string_to_metrics(cve_entry_template,vector_string: str) -> Dict[str,
 
     
     except Exception as e:
-        logging.error(f"❌ Error parsing vector string: {e}")
+        logging.error(f" Error parsing vector string: {e}")
     
     return cve_entry_template 
 
@@ -408,7 +408,7 @@ def extract_cvedata(cve_data_json: Dict = {}):
                                     integrity_impact_list.append(metric[version_key].get('vulnIntegrityImpact', ''))
                                     integrity_impact_list.append(metric[version_key].get('subIntegrityImpact', ''))
                                     cve_entry_template_v2['integrity_impact'] = integrity_impact_list
-                                    logging.info(f'Successfully added vuln and sub integrity exploit metrics to template {cve_entry_template_v2['integrity_impact']}')
+                                    logging.info(f"Successfully added vuln and sub integrity exploit metrics to template {cve_entry_template_v2['integrity_impact']}")
 
                                 
                                 confidentiality_impact_list = []
@@ -416,7 +416,7 @@ def extract_cvedata(cve_data_json: Dict = {}):
                                     confidentiality_impact_list.append(metric[version_key].get('vulnConfidentialityImpact', ''))
                                     confidentiality_impact_list.append(metric[version_key].get('subConfidentialityImpact', ''))
                                     cve_entry_template_v2['confidentiality_impact'] = confidentiality_impact_list
-                                    logging.info(f'Successfully added vuln and sub confidentiality exploit metrics to template {cve_entry_template_v2['confidentiality_impact']}')
+                                    logging.info(f'Successfully added vuln and sub confidentiality exploit metrics to template {cve_entry_template_v2["confidentiality_impact"]}')
 
                                 
                                 availability_impact_list = []
@@ -424,7 +424,7 @@ def extract_cvedata(cve_data_json: Dict = {}):
                                     availability_impact_list.append(metric[version_key].get('vulnAvailabilityImpact', ''))
                                     availability_impact_list.append(metric[version_key].get('subAvailabilityImpact', ''))
                                     cve_entry_template_v2['availability_impact'] = availability_impact_list
-                                    logging.info(f'Successfully added vuln and sub availablity exploit metrics to template {cve_entry_template_v2['availability_impact'] }')
+                                    logging.info(f'Successfully added vuln and sub availablity exploit metrics to template {cve_entry_template_v2["availability_impact"] }')
 
                                 #Finding any of the missing metrics
                                 missing_metrics = []
