@@ -12,27 +12,29 @@ on:
   # Trigger on pushes to main branch (for testing)
   push:
     # add a new dev branch as well and 
-    branches: [ main , dev]
+    branches: [ main ]
     paths: &push_pull_paths
   # add more paths for change in main or extract or cve pipeline 
-    - 'src'
+    - 'src/'
+    - 'main.py'
+    - 'requirements.txt'
     - '.github/workflows/pipeline.yml'
 
-
   pull_request:
-    branches: [ main , dev]
+    branches: [ main ]
     paths:
       *push_pull_paths
 
 jobs:
+  #For job outputs => jobs.<job_id>.outputs
   setup-project:
     
     #Define runner os
     runs-on: ubuntu-latest
 
     outputs:
-      #jobs.<job_id>.output_name
-      all_years: ${{ setup-project.get_all_years.outputs.all_years }}
+      #For step output => steps.<step_id>.outputs.<output_name>
+      all_years: ${{steps.get_all_years.outputs.all_years}}
 
     steps:
         # 1. Checkout the repo
@@ -72,7 +74,8 @@ jobs:
 
     strategy:
       matrix:
-        year: ${{needs.setup-project.outputs.all_years}}
+        #year: ${{needs.setup-project.outputs.all_years}}
+        year: [1999, 2000, 2001, 2002]
 
     steps:
       - *repo_checkout_step
@@ -96,14 +99,14 @@ jobs:
           name: cve_${{matrix.year}}
           path: dataset/cve_${{matrix.year}}.csv
 
+
   create-combined-dataset:
     runs-on: ubuntu-latest
 
     needs: extract-create-datasets
 
-    env:
-      KAGGLE_USERNAME: ${{secrets.KAGGLE_USERNAME}}
-      KAGGLE_KEY: ${{secrets.KAGGLE_KEY}}
+    env: &kaggle_env_vars
+      KAGGLE_API_TOKEN: ${{secrets.KAGGLE_API_TOKEN}}
 
     steps:
       - *repo_checkout_step
@@ -116,13 +119,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: cve_*.csv
-          #Path where combined dataset file will be created
           path: dataset/downloaded_artifacts
 
       - name: Combine all artifacts
         run: |
-          head -n 1 dataset/downloaded_artifacts/cve_1999/cve_1999.csv >> dataset/combined_dataset.csv
-          tail -n +2 dataset/downloaded_artifacts/cve_*/cve_*.csv >> dataset/combined_dataset.csv
+          head -n 1 dataset/downloaded_artifacts/cve_1999/cve_1999.csv >> dataset/cve_combined_dataset.csv
+          tail -n +2 dataset/downloaded_artifacts/cve_*/cve_*.csv >> dataset/cve_combined_dataset.csv
           ls -lh dataset
 
       - name: Upload combined dataset as new artifact
@@ -131,7 +133,33 @@ jobs:
         with:
           name: dataset_combined
           path: dataset/dataset_combined.csv
-          
+  
+  upload-to-kaggle:
+    runs-on: ubuntu-latest
+
+    env:
+      *kaggle_env_vars
+
+    steps:
+      - *repo_checkout_step
+
+      - *python_setup_step
+
+      - *install_dependencies_step
+
+      - name: Download combined dataset artifact
+        uses: actions/download-artifact@v4
+
+        with:
+          name: dataset_combined
+          path: dataset/
+
+      - name: Upload combined dataset
+        run: |
+          python main.py --upload
+
+
+
 
 
           

@@ -6,42 +6,35 @@ import subprocess
 
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
+from config import KAGGLE_API_TOKEN
 
-import re
-
-from config import KAGGLE_KEY, KAGGLE_USERNAME
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-
 class KaggleManager:
-    def __init__(self, dataset_folder_path="dataset"):
+    def __init__(self, dataset_folder_path: Optional[str] = "dataset"):
+        
+        #Path to folder containing combined dataset and dataset metadata json 
         self.dataset_folder_path = Path(dataset_folder_path)
-        self.dataset_path = self.dataset_folder_path / "cve_data.csv"
-        self.metadata_file = self.dataset_folder_path / "dataset-metadata.json"
+        self.dataset_path = self.dataset_folder_path / "cve_combined_dataset.csv"
 
-        #Validating the key kaggle enivronment variables
-        self.username_token = os.environ.get('KAGGLE_USERNAME') or KAGGLE_USERNAME
-        self.key_token = os.environ.get('KAGGLE_KEY') or KAGGLE_KEY
+        self.metadata_file_path = self.dataset_folder_path / "dataset-metadata.json"
+        self.dataset_metadata = self.get_metadata()
 
-        self._validate_environ()
+        self.kaggle_api_token = os.environ.get('KAGGLE_API_TOKEN') or KAGGLE_API_TOKEN
 
-        #Get metadata
-        self.dataset_metadata = self._get_metadata()
 
-    def _validate_environ(self):
+    def validate_environ(self):
 
             # Check if dataset folder exists
             if not self.dataset_folder_path.exists():
                 logging.error(f"Dataset folder does not exist: {self.dataset_folder_path}")
                 sys.exit(1)
 
-            #Check if environment variables for kaggle exist
-            
             key_env_variables = [self.username_token, self.key_token]
 
             if not all(key_env_variables):
@@ -49,10 +42,10 @@ class KaggleManager:
                 sys.exit(1)
 
 
-    def _get_metadata(self):
+    def get_metadata(self):
 
         try:
-            with open(self.metadata_file, 'r') as f:
+            with open(self.metadata_file_path, 'r') as f:
                 dataset_metadata = json.load(f)
 
                 #Checking for important title and id fields
@@ -71,77 +64,72 @@ class KaggleManager:
         
     
     #Creating a method that let's us run different kaggle commands through subprocess
-    def _run_kaggle_command(self, command):
+    def run_kaggle_command(self, command):
         try:
-            command_str = ''.join(command)
+            command_str = ' '.join(command)
             logging.info(f'Running "{command_str}" kaggle command')
 
             result = subprocess.run(command, 
                                     capture_output= True,
                                     text=True,
-                                    check=True
-                                    )
+                                    check=True)
             
-            if result.stdout:
-                logging.info(f'Command output for "{command_str}": {result.stdout}')
-                return result
-            
+            return result
         except subprocess.CalledProcessError as e:
             logging.error(f"Command failed: {e}")
             logging.error(f"Error output: {e.stderr}")
             return None
         
-    # Creating four kaggle commands 1. Create a new dataset, 2. Upload new dataset, 3. Update  dataset
 
     #Method to check if a dataset exists on Kaggle using metadata id
-    def _check_dataset_exists(self):
+    def check_dataset_exists(self, dataset_name: str = ''):
         try:
             logging.info("Checking for existing dataset...")
-            command=['kaggle', 'datasets', 'list', '-s', self.dataset_metadata['id'], '--csv']
+            #Command to list your own datsets
+            command=['kaggle', 'datasets', 'list', '--mine','--csv']
+            #NOTE: --csv flag prints results in a csv format
 
-            exists = self._run_kaggle_command(command)
-            #return output is a class object
+            result = self.run_kaggle_command(command)
+            result1 = (result.stdout).split('\n')
+            all_datasets = [item.split(',') for item in result1][2:-2]
+            #logging.info(f'Here is the result: {result.stdout}')
 
-            if exists.stdout:
-                outputs = exists.stdout.strip().split('\n')
-                outputs_str = ','.join(outputs)
-
-                match = re.search(self.dataset_metadata['id'], outputs_str)
-                if len(outputs) > 1 and match:
-                    logging.info(f"Dataset {self.dataset_metadata['id']} already exists on Kaggle")
-                    return True
+            if all_datasets:
+                print(f'This is the output {all_datasets} and type {type(all_datasets)}')
                 
-            return False
+                for dataset in all_datasets:
+                    if dataset_name in dataset:
+                        return True
+                    else:
+                        return False
 
         except Exception as e:
             logging.error(f"Error occurred while checking dataset existence: {e}")
             return False
         
     #Method to create a new dataset for kaggle upload
-    def _create_dataset(self):
+    def create_kaggle_dataset(self, dataset: str = ''):
         try:
             logging.info("Creating new dataset on Kaggle...")
-            logging.info(f"Dataset path: {self.dataset_path}")
 
-            create_dataset = ['kaggle', 'datasets', 'create', '-u','-p', str(self.dataset_folder_path)]
-            result = self._run_kaggle_command(create_dataset)
+            # -p flag takes path to the folder containing combined dataset and metadata file
+            create_dataset_command = ['kaggle', 'datasets', 'create','-p', str(self.dataset_folder_path), '-u']
+            result = self.run_kaggle_command(command=create_dataset_command)
 
             if result:
-                logging.info("✅ Dataset created successfully")
+                logging.info(f"Dataset {dataset} created successfully on Kaggle profile!")
             else:
-                logging.error("❌ Failed to create dataset")
+                logging.error(f"Failed to create dataset {dataset}")
 
         except Exception as e:
-            logging.error(f"Error occurred while creating dataset: {e}")
+            logging.error(f"Error occurred while creating dataset {dataset}: {e}")
             return None
         
     #Method to update an existing dataset on kaggle to it's newer version 
-    def _update_dataset(self):
+    def update_dataset(self, dataset: str = ''):
         try:
-            exists = self._check_dataset_exists()
 
-            if exists:
-                logging.info("Updating existing dataset on Kaggle...")
+                logging.info(f"Updating existing dataset {dataset} on Kaggle...")
 
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 update_command = ['kaggle', 
@@ -154,49 +142,13 @@ class KaggleManager:
                 result = self._run_kaggle_command(update_command)
 
                 if result:
-                    logging.info("✅ Dataset updated successfully")
+                    logging.info(f"Dataset {dataset} updated successfully!")
                     return True
                 else:
-                    logging.error("❌ Failed to update dataset")
+                    logging.error(f"Failed to update dataset {dataset}")
                 return False
             
         except Exception as e:
             logging.error(f"Error occurred while updating dataset: {e}")
             return False
-        
-    #Method to upload the dataset to kaggle
-    def _upload_dataset(self):
-        try:
-            if self._check_dataset_exists():
-                logging.info('Dataset exists. Starting upload...')
-                dataset = self._update_dataset()
-            else:
-                logging.info('Dataset does NOT exist. Creating new dataset...')
-                dataset = self._create_dataset()
-
-            if  dataset:
-                return True
-
-        except Exception as e:
-            logging.error(f"Error occurred while uploading dataset: {e}")
-            return False
-
-
-
-def main():
-    try:
-        manager = KaggleManager()
-        success = manager._upload_dataset()
-
-        if success:
-            logging.info("Kaggle dataset upload process completed successfully.")
-        else:
-            logging.error("Kaggle dataset upload process failed.")
-
-    except Exception as e:
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
 

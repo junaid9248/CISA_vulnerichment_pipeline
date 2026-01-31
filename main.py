@@ -1,6 +1,7 @@
 import argparse
 from src.extractor import run
 from src.get_years import get_years
+from src.kaggle_manager import KaggleManager
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -11,14 +12,32 @@ def main(arguments):
         if arguments.year:
             years_string = arguments.years_list
             years = years_string.split(',')
+
+            if years:
+                logging.info(f'Starting extraction process in test mode for years: {years}')
+
+                for year in years:
+                    run(year= year)
         elif arguments.run:
             years = get_years()
 
-    if years:
-        logging.info(f'Starting extraction process for years {years}')
+            if years:
+                logging.info(f'Starting extraction process in auto mode for years: {years}')
 
-        for year in years:
-            run(year= year)
+                for year in years:
+                    run(year= year)
+
+        if arguments.upload:
+            kmanager = KaggleManager()
+            dataset = 'junaidmohammad9248/cisa-cve-vulnrichment'
+            
+            exists= kmanager.check_dataset_exists(dataset)
+
+            if exists:
+                logging.info(f"Dataset {dataset} already exists on Kaggle")
+                kmanager.update_dataset(dataset= dataset)
+            else:
+                kmanager.create_kaggle_dataset(dataset=dataset)
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(description='Arguments for the Kaggle CI/CD pipeline')
@@ -42,8 +61,11 @@ if __name__ == '__main__':
     )
 
     argparser.add_argument(
-        '--upload'
+        '--upload',
+        action='store_true',
+        help='Flag to run kaggle upload'
     )
+
     arguments = argparser.parse_args()
 
     main(arguments=arguments)
