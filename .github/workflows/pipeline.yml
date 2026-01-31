@@ -12,7 +12,7 @@ on:
     # add a new dev branch as well and 
     branches: [ main, dev ]
     paths: &push_pull_paths
-      - 'src/'
+      - 'src/**'
       - 'main.py'
       - 'requirements.txt'
       - '.github/workflows/pipeline.yml'
