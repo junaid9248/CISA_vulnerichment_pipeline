@@ -40,6 +40,8 @@ def main(arguments):
             exists= kmanager.check_dataset_exists(dataset)
 
             if exists:
+                logging.info(f"Dataset {dataset} ALREADY exists on Kaggle")
+
                 kmanager.update_dataset(dataset = dataset)
             else:
                 logging.info(f"Dataset {dataset} does NOT exist on Kaggle")

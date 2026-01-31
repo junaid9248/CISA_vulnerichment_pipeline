@@ -20,7 +20,7 @@ class KaggleManager:
         
         #Path to folder containing combined dataset and dataset metadata json 
         self.dataset_folder_path = Path(dataset_folder_path)
-        self.dataset_path = self.dataset_folder_path / "dataset_combined.csv"
+        self.dataset_path = self.dataset_folder_path / "cve_combined.csv"
 
         self.metadata_file_path = self.dataset_folder_path / "dataset-metadata.json"
         self.dataset_metadata = self.get_metadata()

@@ -102,8 +102,6 @@ jobs:
 
     needs: extract-create-datasets
 
-    
-
     steps:
       - *repo_checkout_step
 
@@ -127,8 +125,8 @@ jobs:
         uses: actions/upload-artifact@v4
 
         with:
-          name: dataset_combined
-          path: dataset/dataset_combined.csv
+          name: cve_combined
+          path: dataset/cve_combined.csv
   
   upload-to-kaggle:
     runs-on: ubuntu-latest
