@@ -156,7 +156,7 @@ jobs:
       - name: Upload combined dataset
         run: |
           mkdir --parents ~/.kaggle
-          echo '{"username": "$env:KAGGLE_USERNAME","key": "$env:KAGGLE_KEY"}' > ~/.kaggle/kaggle.json
+          echo '{"username": "$KAGGLE_USERNAME","key": "$KAGGLE_KEY"}' > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
           python main.py --upload
