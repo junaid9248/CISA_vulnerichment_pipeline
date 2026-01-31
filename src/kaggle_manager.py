@@ -113,7 +113,7 @@ class KaggleManager:
             logging.info("Creating new dataset on Kaggle...")
 
             # -p flag takes path to the folder containing combined dataset and metadata file
-            create_dataset_command = ['kaggle', 'datasets', 'create','-p', str(self.dataset_path), '-u']
+            create_dataset_command = ['kaggle', 'datasets', 'create','-p', str(self.dataset_folder_path), '-u']
             result = self.run_kaggle_command(command=create_dataset_command)
 
             if result:
@@ -128,16 +128,10 @@ class KaggleManager:
     #Method to update an existing dataset on kaggle to it's newer version 
     def update_dataset(self, dataset: str = ''):
         try:
-
                 logging.info(f"Updating existing dataset {dataset} on Kaggle...")
 
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                update_command = ['kaggle', 
-                                  'datasets', 
-                                  'version', 
-                                  '-p', 
-                                  str(self.dataset_path), 
-                                  '-m', f'New version has been uploaded at: {timestamp}']
+                update_command = ['kaggle', 'datasets', 'version','-p', str(self.dataset_folder_path), '-m', f'New version has been uploaded at: {timestamp}']
 
                 result = self.run_kaggle_command(update_command)
 

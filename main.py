@@ -1,10 +1,13 @@
 import argparse
+import os
 from src.extractor import run
 from src.get_years import get_years
 from src.kaggle_manager import KaggleManager
-from config import KAGGLE_USERNAME
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+from dotenv import load_dotenv
+load_dotenv()
 
 def main(arguments):
 
@@ -29,7 +32,7 @@ def main(arguments):
 
         if arguments.upload:
             kmanager = KaggleManager()
-            dataset = f"{KAGGLE_USERNAME}/cisa-cve-vulnrichment"
+            dataset = f"{os.environ.get('KAGGLE_USERNAME', None)}/cisa-cve-vulnrichment"
 
             exists= kmanager.check_dataset_exists(dataset)
 
