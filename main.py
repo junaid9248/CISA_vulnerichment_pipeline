@@ -33,6 +33,7 @@ def main(arguments):
 
         if arguments.upload:
             kmanager = KaggleManager()
+            dataset= None
             if KAGGLE_USERNAME or os.environ.get('KAGGLE_USERNAME', None):
                 dataset = f"{KAGGLE_USERNAME}/cisa-cve-vulnrichment"
 
