@@ -29,8 +29,8 @@ def main(arguments):
 
         if arguments.upload:
             kmanager = KaggleManager()
-            dataset = 'junaidmohammad9248/cisa-cve-vulnrichment'
-            
+            dataset = "junaidmohammad9248/cisa-cve-vulnrichment"
+
             exists= kmanager.check_dataset_exists(dataset)
 
             if exists:
