@@ -148,7 +148,7 @@ jobs:
         uses: actions/download-artifact@v4
 
         with:
-          name: dataset_combined
+          name: cve_combined
           path: dataset/
 
       - name: Upload combined dataset
