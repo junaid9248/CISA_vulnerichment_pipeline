@@ -135,6 +135,8 @@ jobs:
   upload-to-kaggle:
     runs-on: ubuntu-latest
 
+    needs: create-combined-dataset
+
     env:
       *kaggle_env_vars
 
