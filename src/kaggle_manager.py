@@ -3,7 +3,7 @@ import os
 import sys
 import json
 import subprocess
-
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -90,18 +90,15 @@ class KaggleManager:
             #NOTE: --csv flag prints results in a csv format
 
             result = self.run_kaggle_command(command)
-            result1 = (result.stdout).split('\n')
-            all_datasets = [item.split(',') for item in result1][2:-2]
+            result1 = (result.stdout).strip().split('\n')
+            result2 = ','.join(result1)
             #logging.info(f'Here is the result: {result.stdout}')
 
-            if all_datasets:
-                print(f'This is the output {all_datasets} and type {type(all_datasets)}')
-                
-                for dataset in all_datasets:
-                    if dataset_name in dataset:
-                        return True
-                    else:
-                        return False
+            if result2:
+                if re.search(dataset_name, result2):
+                    return True
+                else:
+                    return False
 
         except Exception as e:
             logging.error(f"Error occurred while checking dataset existence: {e}")
