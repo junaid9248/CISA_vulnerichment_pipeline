@@ -20,7 +20,7 @@ class KaggleManager:
         
         #Path to folder containing combined dataset and dataset metadata json 
         self.dataset_folder_path = Path(dataset_folder_path)
-        self.dataset_path = self.dataset_folder_path / "cve_combined_dataset.csv"
+        self.dataset_path = self.dataset_folder_path / "dataset_combined.csv"
 
         self.metadata_file_path = self.dataset_folder_path / "dataset-metadata.json"
         self.dataset_metadata = self.get_metadata()
@@ -113,7 +113,7 @@ class KaggleManager:
             logging.info("Creating new dataset on Kaggle...")
 
             # -p flag takes path to the folder containing combined dataset and metadata file
-            create_dataset_command = ['kaggle', 'datasets', 'create','-p', str(self.dataset_folder_path), '-u']
+            create_dataset_command = ['kaggle', 'datasets', 'create','-p', str(self.dataset_path), '-u']
             result = self.run_kaggle_command(command=create_dataset_command)
 
             if result:
@@ -136,7 +136,7 @@ class KaggleManager:
                                   'datasets', 
                                   'version', 
                                   '-p', 
-                                  str(self.dataset_folder_path), 
+                                  str(self.dataset_path), 
                                   '-m', f'New version has been uploaded at: {timestamp}']
 
                 result = self.run_kaggle_command(update_command)

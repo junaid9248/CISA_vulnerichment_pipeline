@@ -2,7 +2,7 @@ import argparse
 from src.extractor import run
 from src.get_years import get_years
 from src.kaggle_manager import KaggleManager
-
+from config import KAGGLE_USERNAME
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -29,7 +29,7 @@ def main(arguments):
 
         if arguments.upload:
             kmanager = KaggleManager()
-            dataset = "junaidmohammad9248/cisa-cve-vulnrichment"
+            dataset = f"{KAGGLE_USERNAME}/cisa-cve-vulnrichment"
 
             exists= kmanager.check_dataset_exists(dataset)
 
