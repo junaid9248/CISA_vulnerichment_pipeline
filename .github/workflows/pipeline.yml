@@ -1,7 +1,5 @@
 name: CVE Data Pipeline
 
-run-name: Deploy a dataset to Kaggle profile created from artifact datasets for all available years
-
 on:
   schedule:
     - cron: '0 12 * * *'
@@ -12,7 +10,7 @@ on:
   # Trigger on pushes to main branch (for testing)
   push:
     # add a new dev branch as well and 
-    branches: [ main ]
+    branches: [ main, dev ]
     paths: &push_pull_paths
   # add more paths for change in main or extract or cve pipeline 
     - 'src/'
@@ -21,7 +19,7 @@ on:
     - '.github/workflows/pipeline.yml'
 
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
     paths:
       *push_pull_paths
 
