@@ -139,7 +139,7 @@ class KaggleManager:
                                   str(self.dataset_folder_path), 
                                   '-m', f'New version has been uploaded at: {timestamp}']
 
-                result = self._run_kaggle_command(update_command)
+                result = self.run_kaggle_command(update_command)
 
                 if result:
                     logging.info(f"Dataset {dataset} updated successfully!")

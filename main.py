@@ -37,6 +37,7 @@ def main(arguments):
                 logging.info(f"Dataset {dataset} already exists on Kaggle")
                 kmanager.update_dataset(dataset= dataset)
             else:
+                logging.info(f"Dataset {dataset} already exists on Kaggle")
                 kmanager.create_kaggle_dataset(dataset=dataset)
 
 if __name__ == '__main__':
