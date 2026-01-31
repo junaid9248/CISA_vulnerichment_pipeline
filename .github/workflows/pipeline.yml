@@ -136,7 +136,8 @@ jobs:
     needs: create-combined-dataset
 
     env: &kaggle_env_vars
-      KAGGLE_API_TOKEN: ${{secrets.KAGGLE_API_TOKEN}}
+      KAGGLE_USERNAME: ${{secrets.KAGGLE_USERNAME}}
+      KAGGLE_KEY: ${{secrets.KAGGLE_KEY}} 
 
     steps:
       - *repo_checkout_step
@@ -155,9 +156,9 @@ jobs:
       - name: Upload combined dataset
         run: |
           mkdir --parents ~/.kaggle
-          echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
+          echo '{"username": "$env:KAGGLE_USERNAME","key": "$env:KAGGLE_KEY"}' > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
-          
+
           python main.py --upload
 
 
