@@ -12,11 +12,10 @@ on:
     # add a new dev branch as well and 
     branches: [ main, dev ]
     paths: &push_pull_paths
-  # add more paths for change in main or extract or cve pipeline 
-    - 'src/'
-    - 'main.py'
-    - 'requirements.txt'
-    - '.github/workflows/pipeline.yml'
+      - 'src/'
+      - 'main.py'
+      - 'requirements.txt'
+      - '.github/workflows/pipeline.yml'
 
   pull_request:
     branches: [ main, dev ]

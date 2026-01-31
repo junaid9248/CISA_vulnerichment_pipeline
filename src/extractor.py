@@ -158,7 +158,7 @@ def extract_store_cve_data(year_data: Dict = {}):
                             write_to_csv(data = data_to_write, writer=writer)
                             files_written_to_csv = files_written_to_csv+1
                     except Exception as e:
-                        error_cve_id=result['cveId']
+                        error_cve_id = result['cveId']
                         logging.error(f'There was an error processing future for {error_cve_id}: {e}')
 
             logging.info(f'Successfully processed {files_written_to_csv} cve entry files for the year {file_year}')    
