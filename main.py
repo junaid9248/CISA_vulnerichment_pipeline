@@ -1,5 +1,6 @@
 import argparse
 import os
+from config import KAGGLE_USERNAME
 from src.extractor import run
 from src.get_years import get_years
 from src.kaggle_manager import KaggleManager
@@ -32,15 +33,16 @@ def main(arguments):
 
         if arguments.upload:
             kmanager = KaggleManager()
-            dataset = f"{os.environ.get('KAGGLE_USERNAME', None)}/cisa-cve-vulnrichment"
+            if KAGGLE_USERNAME or os.environ.get('KAGGLE_USERNAME', None):
+                dataset = f"{KAGGLE_USERNAME}/cisa-cve-vulnrichment"
 
             exists= kmanager.check_dataset_exists(dataset)
 
             if exists:
-                logging.info(f"Dataset {dataset} already exists on Kaggle")
-                kmanager.update_dataset(dataset= dataset)
+                logging.info(f"Dataset already exists on Kaggle")
+                kmanager.update_dataset(dataset = dataset)
             else:
-                logging.info(f"Dataset {dataset} already exists on Kaggle")
+                logging.info(f"Dataset does NOT exist on Kaggle")
                 kmanager.create_kaggle_dataset(dataset=dataset)
 
 if __name__ == '__main__':
