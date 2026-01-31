@@ -197,7 +197,7 @@ def get_cve_files_for_year(year: str) -> Dict:
     year_data = {'year': year, 'subdirs': {}}  
     
     url = f"{conn_details['base_url']}/repos/{conn_details['repo_owner']}/{conn_details['repo_name']}/contents/{year}"
-    params = f'{conn_details['branch']}'
+    params = f'{conn_details["branch"]}'
     
     try:
         response = session.get(url, params=params)  
@@ -211,14 +211,14 @@ def get_cve_files_for_year(year: str) -> Dict:
             logging.info(f" Found {len(year_response_data)} subdirectories in {year} year directory")
             
             for item in year_response_data:
-                logging.info(f"   - {item['name']}")
+                logging.info(f"- {item['name']}")
 
             # Process directories only
             subdirs = [item for item in year_response_data if item['type'] == 'dir']
 
             for i, item in enumerate(subdirs):
                 subdir_name = item['name']
-                logging.info(f"    - [{i+1}/{len(subdirs)}] Processing {subdir_name}...")
+                logging.info(f"- [{i+1}/{len(subdirs)}] Processing {subdir_name}...")
                 
                 # Initialize subdirectory
                 year_data['subdirs'][subdir_name] = []
