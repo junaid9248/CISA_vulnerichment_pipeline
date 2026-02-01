@@ -1,0 +1,179 @@
+name: CVE Data Pipeline
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+  
+  # Trigger on pushes to main branch (for testing)
+  push:
+    # add a new dev branch as well and 
+    branches: [ main, dev ]
+    paths: &push_pull_paths
+      - 'src/**'
+      - 'main.py'
+      - 'requirements.txt'
+      - '.github/workflows/pipeline.yml'
+      - 'scripts/**'
+
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      *push_pull_paths
+
+jobs:
+  #For job outputs => jobs.<job_id>.outputs
+  setup-project:
+    
+    #Define runner os
+    runs-on: ubuntu-latest
+
+    outputs:
+      #For step output => steps.<step_id>.outputs.<output_name>
+      all_years: ${{steps.get_all_years.outputs.all_years}}
+
+    steps:
+        # 1. Checkout the repo
+        - &repo_checkout_step
+          name: Checkout repository
+          uses: actions/checkout@v4
+          with: 
+            fetch-depth: 0
+        
+        # 2. Install Python v3.11.4
+        - &python_setup_step
+          name: Install Python and dependencies
+          uses: actions/setup-python@v4
+          with: 
+            python-version: '3.11.4'
+            cache: 'pip'
+        
+        # 3. Install dependencies from requirements file
+        - &install_dependencies_step
+          name: Install dependencies
+          run: |
+            pip install -r requirements.txt
+
+        # 4. Get all available years
+        - name: Fetch all years
+          env:
+            GH_TOKEN : ${{ secrets.GH_TOKEN }}
+
+          id: 
+            get_all_years
+          run: |
+            echo "all_years=$(python -c 'from src.get_years import get_years; print(get_years())')" >> "$GITHUB_OUTPUT"
+
+  extract-create-datasets:
+    runs-on: ubuntu-latest
+    needs: setup-project
+
+    env:
+      GH_TOKEN: ${{secrets.GH_TOKEN}}
+
+    strategy:
+      matrix:
+        year: ${{fromJson(needs.setup-project.outputs.all_years)}}
+        #year: [1999, 2000, 2001, 2002]
+
+    steps:
+      - *repo_checkout_step
+
+      - *python_setup_step
+
+      - *install_dependencies_step
+
+      - name: Run main python script with a year from the matrix
+        run: |
+          python main.py --year ${{matrix.year}}
+
+      - name: List dataset contents after extraction
+        run: |
+            ls -lh dataset/
+
+      - name: Upload artifacts for each year
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: cve_${{matrix.year}}
+          path: dataset/cve_${{matrix.year}}.csv
+
+
+  create-combined-dataset:
+    runs-on: ubuntu-latest
+
+    needs: extract-create-datasets
+
+    steps:
+      - *repo_checkout_step
+
+      - name: Fetch all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cve_*
+          path: dataset/downloaded_artifacts
+
+      - name: Combine all artifacts
+        run: |
+          cd scripts
+          chmod +x create_combined.sh
+          ./create_combined.sh
+          cd ..
+          pwd
+          
+
+      - name: Upload combined dataset as new artifact
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: cve_combined
+          path: dataset/cve_combined.csv
+  
+  upload-to-kaggle:
+    runs-on: ubuntu-latest
+
+    needs: create-combined-dataset
+
+    env: &kaggle_env_vars
+      KAGGLE_USERNAME: ${{secrets.KAGGLE_USERNAME}}
+      KAGGLE_KEY: ${{secrets.KAGGLE_KEY}} 
+
+    steps:
+      - *repo_checkout_step
+
+      - *python_setup_step
+
+      - *install_dependencies_step
+
+      - name: Download combined dataset artifact
+        uses: actions/download-artifact@v4
+
+        with:
+          name: cve_combined
+          path: dataset/
+
+      - name: Upload combined dataset
+        run: |
+          cd scripts
+          chmod +x kaggle_credentials.sh
+          ./kaggle_credentials.sh
+          cd ..
+
+          pwd
+
+          python main.py --upload
+
+
+
+
+
+          
+
+
+      
+
+      
+
+    
