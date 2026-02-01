@@ -3,12 +3,7 @@ import os
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
 import csv
-import os
 import time
 
 from typing import Dict, Any
@@ -16,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from src.json_parser import extract_cvedata 
 from config import GH_TOKEN
+
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -60,7 +56,6 @@ def write_to_csv(data: Dict = {},writer: Any = None):
 
     #Using the writer to write row data to csv
     writer.writerow(data)
-
 
 def download_file_from_url(file: Dict ={}, file_year: str = '') -> Dict:
     file_name = file['name']

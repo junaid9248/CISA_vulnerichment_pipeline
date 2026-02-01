@@ -105,10 +105,6 @@ jobs:
     steps:
       - *repo_checkout_step
 
-      - *python_setup_step
-
-      - *install_dependencies_step
-
       - name: Fetch all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -117,7 +113,7 @@ jobs:
 
       - name: Combine all artifacts
         run: |
-          head -n 1 dataset/downloaded_artifacts/cve_1999/cve_1999.csv >> dataset/cve_combined.csv
+          head -n 1 dataset/downloaded_artifacts/cve_2001/cve_2001.csv >> dataset/cve_combined.csv
           tail -n +2 dataset/downloaded_artifacts/cve_*/cve_*.csv >> dataset/cve_combined.csv
           ls -lh dataset
 
