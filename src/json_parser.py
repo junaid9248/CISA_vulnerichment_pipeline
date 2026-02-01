@@ -449,46 +449,43 @@ def extract_cvedata(cve_data_json: Dict = {}):
                             cisa_adp_vulnrichment_metrics_other_container = metric['other']
                             content_other = cisa_adp_vulnrichment_metrics_other_container.get('content', {})
 
-                            # For the other container with type ssvvc
-                            type_other = cisa_adp_vulnrichment_metrics_other_container.get('type', '')
-                            # For the other container with type kev
-                            if type_other == 'kev':
-                                cve_entry_template_v2['cisa_kev'] = True
-                                kev_date_string = content_other.get('dateAdded', '')
-                                kdt_object = parse_cve_datetime_strings(dt_string=kev_date_string, column_value='kevdateAdded', cve_id=cve_id)
-                                
-                                if kdt_object:
-                                    logging.info(f'This is kdt_object for cve record - {cve_id}: {kdt_object}')
-                                    cve_entry_template_v2['cisa_kev_date'] = kdt_object.date().isoformat()
-                                else:
-                                    cve_entry_template_v2['cisa_kev_date'] = None
-
-                            if type_other =='ssvc':
-                                ssvc_time_string = content_other.get('timestamp', '')
-                                sssvc_dt_object = parse_cve_datetime_strings(dt_string=ssvc_time_string, column_value='ssvc_timestamp', cve_id = cve_id)
+                            ssvc_time_string = content_other.get('timestamp', '')
+                            sssvc_dt_object = parse_cve_datetime_strings(dt_string=ssvc_time_string, column_value='ssvc_timestamp', cve_id = cve_id)
+                            if sssvc_dt_object:
                                 cve_entry_template_v2['ssvc_timestamp']  = sssvc_dt_object.isoformat()
 
-                                options = content_other.get('options', [])
-
-                                for option in options:
-                                    if 'Exploitation' in option:
-                                        logging.info
-                                        cve_entry_template_v2['ssvc_exploitation'] = option.get('Exploitation', '')
-                                    if 'Automatable' in option:
-                                        cve_entry_template_v2['ssvc_automatable'] = bool(option.get('Automatable', '').lower()) == 'yes'
-                                    if 'Technical Impact' in option:
-                                        cve_entry_template_v2['ssvc_technical_impact'] = option.get('Technical Impact', '')
-                                
-                                # Calculate SSVC decision if all required fields are present
-                                #if cve_entry_template_v2['ssvc_exploitation'] and cve_entry_template_v2['ssvc_automatable'] and cve_entry_template_v2['ssvc_technical_impact']:
-                                    #logging.info(f'Getting the ssvc decision for {cve_id}')
-                                    cve_entry_template_v2['ssvc_decision'] = calculate_ssvc_score(
-                                        cve_entry_template_v2['ssvc_exploitation'],
-                                        cve_entry_template_v2['ssvc_automatable'],
-                                        cve_entry_template_v2['ssvc_technical_impact']
-                                    )
-
+                            options = content_other.get('options', [])
+                            for option in options:
+                                if 'Exploitation' in option:
+                                    cve_entry_template_v2['ssvc_exploitation'] = option.get('Exploitation', '')
+                                if 'Automatable' in option:
+                                    cve_entry_template_v2['ssvc_automatable'] = bool(option.get('Automatable', '').lower()) == 'yes'
+                                if 'Technical Impact' in option:
+                                    cve_entry_template_v2['ssvc_technical_impact'] = option.get('Technical Impact', '')
                             
+                            # Calculate SSVC decision if all required fields are present
+                            #if cve_entry_template_v2['ssvc_exploitation'] and cve_entry_template_v2['ssvc_automatable'] and cve_entry_template_v2['ssvc_technical_impact']:
+                                #logging.info(f'Getting the ssvc decision for {cve_id}')
+                                cve_entry_template_v2['ssvc_decision'] = calculate_ssvc_score(
+                                    cve_entry_template_v2['ssvc_exploitation'],
+                                    cve_entry_template_v2['ssvc_automatable'],
+                                    cve_entry_template_v2['ssvc_technical_impact']
+                                )
+
+                        if 'other' in metric and metric['other'].get('type') == 'kev':
+                            cisa_adp_vulnrichment_metrics_other_container = metric['other']
+                            content_other = cisa_adp_vulnrichment_metrics_other_container.get('content', {})
+
+                            cve_entry_template_v2['cisa_kev'] = True
+                            kev_date_string = content_other.get('dateAdded', '')
+                            kdt_object = parse_cve_datetime_strings(dt_string=kev_date_string, column_value='kevdateAdded', cve_id=cve_id)
+                            
+                            if kdt_object:
+                                #logging.info(f'This is kdt_object for cve record - {cve_id}: {kdt_object}')
+                                cve_entry_template_v2['cisa_kev_date'] = kdt_object.date().isoformat()
+                        
+
+           
                 # 2.2.2. Finding the problem types container in the CISA ADP container
                 if cisa_adp_vulnrichment_problem_container:
                     for problem_type in cisa_adp_vulnrichment_problem_container:
