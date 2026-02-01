@@ -7,8 +7,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from config import KAGGLE_API_TOKEN
-
+from config import KAGGLE_USERNAME, KAGGLE_KEY
+import kaggle.api
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -25,7 +25,10 @@ class KaggleManager:
         self.metadata_file_path = self.dataset_folder_path / "dataset-metadata.json"
         self.dataset_metadata = self.get_metadata()
 
-        self.kaggle_api_token = os.environ.get('KAGGLE_API_TOKEN') or KAGGLE_API_TOKEN
+        self.kaggle_username = os.environ.get('KAGGLE_USERNAME') or KAGGLE_USERNAME
+        self.kaggle_key = os.environ.get('KAGGLE_KEY') or KAGGLE_KEY
+
+        kaggle.api.authenticate()
 
 
     def validate_environ(self):
@@ -35,7 +38,7 @@ class KaggleManager:
                 logging.error(f"Dataset folder does not exist: {self.dataset_folder_path}")
                 sys.exit(1)
 
-            key_env_variables = [self.username_token, self.key_token]
+            key_env_variables = [self.kaggle_username, self.kaggle_key]
 
             if not all(key_env_variables):
                 logging.error(f"Missing environment variables: {key_env_variables}")
@@ -84,17 +87,19 @@ class KaggleManager:
     #Method to check if a dataset exists on Kaggle using metadata id
     def check_dataset_exists(self, dataset_name: str = ''):
         try:
-            logging.info("Checking for existing dataset...")
+            logging.info(f"Checking for existence of dataset: {dataset_name}")
             #Command to list your own datsets
-            command=['kaggle', 'datasets', 'list', '--mine','--csv']
+            command=['kaggle', 'datasets', 'list', '-s', f'{dataset_name}']
             #NOTE: --csv flag prints results in a csv format
 
             result = self.run_kaggle_command(command)
-            result1 = (result.stdout).strip().split('\n')
+            result1 = result.stdout.strip().split('\n')
             result2 = ','.join(result1)
-            #logging.info(f'Here is the result: {result.stdout}')
+            logging.info(f'Here is the result: {result.stdout}')
 
             if result2:
+                logging.info(f'Here is the result2: {result2}')
+        
                 if re.search(dataset_name, result2):
                     return True
                 else:
@@ -128,7 +133,12 @@ class KaggleManager:
                 logging.info(f"Updating existing dataset {dataset} on Kaggle...")
 
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                update_command = ['kaggle', 'datasets', 'version','-p', str(self.dataset_folder_path), '-m', f'New version has been uploaded at: {timestamp}']
+                update_command = ['kaggle', 
+                                  'datasets', 
+                                  'version', 
+                                  '-p', str(self.dataset_folder_path), 
+                                  '-m', f"New version has been uploaded at: {timestamp}",
+                                  '-d']
 
                 result = self.run_kaggle_command(update_command)
 
@@ -136,8 +146,7 @@ class KaggleManager:
                     logging.info(f"Dataset {dataset} updated successfully!")
                     return True
                 else:
-                    logging.error(f"Failed to update dataset {dataset}")
-                return False
+                    return False
             
         except Exception as e:
             logging.error(f"Error occurred while updating dataset: {e}")
