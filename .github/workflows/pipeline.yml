@@ -118,10 +118,12 @@ jobs:
 
       - name: Combine all artifacts
         run: |
-          head -n 1 dataset/downloaded_artifacts/cve_2001/cve_2001.csv >> dataset/cve_combined.csv          
-          tail -n +2 -q dataset/downloaded_artifacts/cve_*/cve_*.csv >> dataset/cve_combined.csv
-          head -n 20 dataset/cve_combined.csv
-
+          cd scripts
+          chmod +x create_combined.sh
+          ./create_combined.sh
+          cd ..
+          pwd
+          
 
       - name: Upload combined dataset as new artifact
         uses: actions/upload-artifact@v4
@@ -155,9 +157,13 @@ jobs:
 
       - name: Upload combined dataset
         run: |
+          cd scripts
           chmod +x kaggle_credentials.sh
-         
           ./kaggle_credentials.sh
+          cd ..
+          
+          pwd
+
           python main.py --upload
 
 

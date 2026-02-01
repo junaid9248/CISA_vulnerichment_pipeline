@@ -1,4 +1,3 @@
-pwd
 
 mkdir --parents ~/.kaggle
 echo {"name": "$KAGGLE_USERNAME", "key": "$KAGGLE_KEY"} >>  ~/.kaggle/kaggle.json
