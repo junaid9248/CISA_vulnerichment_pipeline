@@ -16,6 +16,7 @@ on:
       - 'main.py'
       - 'requirements.txt'
       - '.github/workflows/pipeline.yml'
+      - 'scripts/**'
 
   pull_request:
     branches: [ main, dev ]
@@ -161,7 +162,7 @@ jobs:
           chmod +x kaggle_credentials.sh
           ./kaggle_credentials.sh
           cd ..
-          
+
           pwd
 
           python main.py --upload
