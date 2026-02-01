@@ -118,12 +118,9 @@ jobs:
 
       - name: Combine all artifacts
         run: |
-          head -n 1 dataset/downloaded_artifacts/cve_2001/cve_2001.csv >> dataset/cve_combined.csv
-          tail -n +1 dataset/downloaded_artifacts/cve_2001/cve_2001.csv
-          tail -n +2 dataset/downloaded_artifacts/cve_2001/cve_2001.csv
-          tail -n +3 dataset/downloaded_artifacts/cve_2001/cve_2001.csv
+          head -n 1 dataset/downloaded_artifacts/cve_2001/cve_2001.csv >> dataset/cve_combined.csv          
           tail -n +2 -q dataset/downloaded_artifacts/cve_*/cve_*.csv >> dataset/cve_combined.csv
-          ls -lh dataset
+          head -n 20 dataset/cve_combined.csv
 
 
       - name: Upload combined dataset as new artifact
