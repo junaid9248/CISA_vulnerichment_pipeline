@@ -71,7 +71,7 @@ jobs:
 
     strategy:
       matrix:
-        #year: ${{needs.setup-project.outputs.all_years}}
+        #year: ${{fromJson(needs.setup-project.outputs.all_years)}}
         year: [1999, 2000, 2001, 2002]
 
     steps:
