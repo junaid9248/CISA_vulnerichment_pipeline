@@ -33,6 +33,8 @@ jobs:
       #For step output => steps.<step_id>.outputs.<output_name>
       all_years: ${{steps.get_all_years.outputs.all_years}}
 
+    
+
     steps:
         # 1. Checkout the repo
         - &repo_checkout_step
@@ -67,7 +69,10 @@ jobs:
 
   extract-create-datasets:
     runs-on: ubuntu-latest
-    needs:  setup-project
+    needs: setup-project
+
+    env:
+      GH_TOKEN: ${{secrets.GH_TOKEN}}
 
     strategy:
       matrix:
