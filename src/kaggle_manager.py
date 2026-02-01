@@ -8,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from config import KAGGLE_USERNAME, KAGGLE_KEY
-import kaggle.api
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
