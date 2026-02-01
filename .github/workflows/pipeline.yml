@@ -34,8 +34,6 @@ jobs:
       #For step output => steps.<step_id>.outputs.<output_name>
       all_years: ${{steps.get_all_years.outputs.all_years}}
 
-    
-
     steps:
         # 1. Checkout the repo
         - &repo_checkout_step
@@ -77,8 +75,8 @@ jobs:
 
     strategy:
       matrix:
-        #year: ${{fromJson(needs.setup-project.outputs.all_years)}}
-        year: [1999, 2000, 2001, 2002]
+        year: ${{fromJson(needs.setup-project.outputs.all_years)}}
+        #year: [1999, 2000, 2001, 2002]
 
     steps:
       - *repo_checkout_step
