@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 class KaggleManager:
-    def __init__(self, dataset_folder_path: Optional[str] = "dataset"):
+    def __init__(self, dataset_folder_path: Optional[str] = "dataset/"):
         
         #Path to folder containing combined dataset and dataset metadata json 
         self.dataset_folder_path = Path(dataset_folder_path)

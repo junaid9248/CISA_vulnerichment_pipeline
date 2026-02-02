@@ -13,6 +13,8 @@ load_dotenv()
 def main(arguments):
 
     if arguments:
+        years = None
+
         if arguments.year:
             years_string = arguments.years_list
             years = years_string.split(',')
@@ -33,20 +35,28 @@ def main(arguments):
 
         if arguments.upload:
             kmanager = KaggleManager()
-            dataset= None
+            dataset_combined = None
+            datasets= None
+
             if KAGGLE_USERNAME or os.environ.get('KAGGLE_USERNAME', None):
-                dataset = f"{KAGGLE_USERNAME}/cisa-cve-vulnrichment"
+
+                dataset_combined = f"{KAGGLE_USERNAME}/cisa-cve-vulnrichment"
+                #datasets = [f"{KAGGLE_USERNAME}/cisa-cve-vulnrichment-{year}" for year in years]
+
+                #datasets.append(dataset_combined)
                 #"junaidmohammad9248/cisa-cve-vulnrichment
+                
+                #Upload all year-wise datasets and combined dataset 
+                
+                exists= kmanager.check_dataset_exists(dataset_name=dataset_combined)
 
-            exists= kmanager.check_dataset_exists(dataset)
+                if exists:
+                    logging.info(f"Dataset {dataset_combined} ALREADY exists on Kaggle")
 
-            if exists:
-                logging.info(f"Dataset {dataset} ALREADY exists on Kaggle")
-
-                kmanager.update_dataset(dataset = dataset)
-            else:
-                logging.info(f"Dataset {dataset} does NOT exist on Kaggle")
-                kmanager.create_kaggle_dataset(dataset=dataset)
+                    kmanager.update_dataset(dataset = dataset_combined)
+                else:
+                    logging.info(f"Dataset {dataset_combined} does NOT exist on Kaggle")
+                    kmanager.create_kaggle_dataset(dataset=dataset_combined)
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(description='Arguments for the Kaggle CI/CD pipeline')
