@@ -18,5 +18,39 @@
     "security",
     "risk-assessment",
     "threat-intelligence"
+  ],
+  "resources": [
+    {
+      "path": "cve_combined.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information"
+    },
+    {
+      "path": "cve_1999.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    },
+    {
+      "path": "cve_2000.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    },
+    {
+      "path": "cve_2001.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    },
+    {
+      "path": "cve_2002.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    },
+    {
+      "path": "cve_2003.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    },
+    {
+      "path": "cve_2004.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    },
+    {
+      "path": "cve_2005.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    }
   ]
 }
