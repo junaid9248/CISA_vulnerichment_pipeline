@@ -21,7 +21,7 @@
   ],
   "resources": [
     {
-      "path": "cve_combined.csv",
+      "path": "",
       "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information"
     }
   ]
