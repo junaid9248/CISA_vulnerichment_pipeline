@@ -51,6 +51,10 @@
     {
       "path": "cve_2005.csv",
       "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
+    },
+    {
+      "path": "cve_2006.csv",
+      "description": "Complete CVE dataset with vulnerability metrics, CVSS scores, SSVC decisions, and product information for year 1999"
     }
   ]
 }
