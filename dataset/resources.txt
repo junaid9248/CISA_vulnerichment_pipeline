@@ -1,0 +1,9 @@
+1. Passing information between jobs
+- https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/pass-job-outputs
+
+2. Workflow syntax for GitHub Actions
+- https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+
+3. GitHub Actions YAML Anchors : Stop Repeating Yourself in Workflows [Mickey Gousset] - https://www.youtube.com/watch?v=O2pbImAy00E
+
+4. Kaggle Metadata - https://github.com/Kaggle/kaggle-cli/blob/main/docs/datasets_metadata.md

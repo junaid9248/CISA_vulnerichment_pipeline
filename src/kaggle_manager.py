@@ -6,7 +6,6 @@ import subprocess
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from config import KAGGLE_USERNAME, KAGGLE_KEY
 
 import logging
@@ -16,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 class KaggleManager:
-    def __init__(self, dataset_folder_path: Optional[str] = "dataset"):
+    def __init__(self, dataset_folder_path: str = "dataset"):
         
         #Path to folder containing combined dataset and dataset metadata json 
         self.dataset_folder_path = Path(dataset_folder_path)
@@ -92,9 +91,8 @@ class KaggleManager:
             #NOTE: --csv flag prints results in a csv format
 
             result = self.run_kaggle_command(command)
-            result1 = result.stdout.strip().split('\n')
-            result2 = ','.join(result1)
-            logging.info(f'Here is the result: {result.stdout}')
+            result2 = ','.join(result.stdout.strip().split('\n'))
+            #logging.info(f'Here is the result: {result.stdout}')
 
             if result2:
                 logging.info(f'Here is the result2: {result2}')

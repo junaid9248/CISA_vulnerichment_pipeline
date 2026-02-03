@@ -75,8 +75,8 @@ jobs:
 
     strategy:
       matrix:
-        #year: ${{fromJson(needs.setup-project.outputs.all_years)}}
-        year: [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006]
+        year: ${{fromJson(needs.setup-project.outputs.all_years)}}
+        #year: [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006]
 
     steps:
       - *repo_checkout_step
