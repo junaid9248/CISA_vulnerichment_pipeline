@@ -147,11 +147,11 @@ jobs:
 
       - *install_dependencies_step
 
-      - name: Download combined dataset artifact
+      - name: Download all dataset dataset artifact
         uses: actions/download-artifact@v4
 
         with:
-          name: cve_combined
+          name: cve_*
           path: dataset/
 
  
