@@ -19,15 +19,13 @@ class KaggleManager:
         
         #Path to folder containing combined dataset and dataset metadata json 
         self.dataset_folder_path = Path(dataset_folder_path)
-        self.dataset_path = self.dataset_folder_path / "cve_combined.csv"
+        #self.dataset_path = self.dataset_folder_path / "cve_combined.csv"
 
         self.metadata_file_path = self.dataset_folder_path / "dataset-metadata.json"
         self.dataset_metadata = self.get_metadata()
 
         self.kaggle_username = os.environ.get('KAGGLE_USERNAME') or KAGGLE_USERNAME
         self.kaggle_key = os.environ.get('KAGGLE_KEY') or KAGGLE_KEY
-
-
 
     def validate_environ(self):
 
@@ -87,7 +85,11 @@ class KaggleManager:
         try:
             logging.info(f"Checking for existence of dataset: {dataset_name}")
             #Command to list your own datsets
-            command=['kaggle', 'datasets', 'list', '-s', f'{dataset_name}']
+            command=['kaggle', 
+                     'datasets', 
+                     'list', 
+                     '-s', 
+                     f'{dataset_name}']
             #NOTE: --csv flag prints results in a csv format
 
             result = self.run_kaggle_command(command)
@@ -103,8 +105,7 @@ class KaggleManager:
                     return False
 
         except Exception as e:
-            logging.error(f"Error occurred while checking dataset existence: {e}")
-            return False
+            raise e(f"Error occurred while checking dataset existence: {e}")
         
     #Method to create a new dataset for kaggle upload
     def create_kaggle_dataset(self, dataset: str = ''):
@@ -112,7 +113,11 @@ class KaggleManager:
             logging.info("Creating new dataset on Kaggle...")
 
             # -p flag takes path to the folder containing combined dataset and metadata file
-            create_dataset_command = ['kaggle', 'datasets', 'create','-p', str(self.dataset_folder_path), '-u']
+            create_dataset_command = ['kaggle', 
+                                      'datasets', 
+                                      'create',
+                                      '-p', str(self.dataset_folder_path), 
+                                      '-u']
             result = self.run_kaggle_command(command=create_dataset_command)
 
             if result:
@@ -135,7 +140,7 @@ class KaggleManager:
                                   'version', 
                                   '-p', str(self.dataset_folder_path), 
                                   '-m', f"New version has been uploaded at: {timestamp}",
-                                  '-d']
+                                  '--delete-old-versions']
 
                 result = self.run_kaggle_command(update_command)
 

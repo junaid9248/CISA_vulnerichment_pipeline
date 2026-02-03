@@ -154,6 +154,12 @@ jobs:
           pattern: cve_*
           path: dataset/
 
+      - name: Flatten dataset directory
+        run: |
+          find dataset/ -mindepth 2 -type f -name "*.csv" -exec mv -t dataset/ {} +
+          find dataset/ -mindepth 1 -type d -empty -delete
+          ls -R dataset/
+
  
       - name: Upload combined dataset alongwith all other years datasets
         run: |
