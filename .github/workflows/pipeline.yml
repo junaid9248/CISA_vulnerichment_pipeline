@@ -147,7 +147,7 @@ jobs:
 
       - *install_dependencies_step
 
-      - name: Download all dataset dataset artifact
+      - name: Download all dataset artifacts to dataset folder
         uses: actions/download-artifact@v4
 
         with:
