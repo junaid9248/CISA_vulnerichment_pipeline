@@ -46,7 +46,7 @@ def get_years():
     try:
         resp = session.get(url = target_url)
 
-        print(resp.json())
+        #print(resp.json())
 
         if resp.status_code == 200:
 
@@ -60,13 +60,14 @@ def get_years():
                     logging.info(f'Successfully fetched all years. Number of years to be processed: {len(years_list)}')
                     return years_list   
                 else:
-                    print('No years fetched') 
+                    logging.error('No years fetched') 
     except requests.RequestException as re:
         logging.error(f'An error occurred in fetching all years: {re}')
         return []
 
+#For testing
 if __name__ == '__main__':
-    
+
     years = get_years()
     print(f'These are years: {years}')
 
