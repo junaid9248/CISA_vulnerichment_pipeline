@@ -7,3 +7,5 @@
 3. GitHub Actions YAML Anchors : Stop Repeating Yourself in Workflows [Mickey Gousset] - https://www.youtube.com/watch?v=O2pbImAy00E
 
 4. Kaggle Metadata - https://github.com/Kaggle/kaggle-cli/blob/main/docs/datasets_metadata.md
+
+5. The Great CVSS Bake Off: Testing How CVSS v4 Performs Versus v3 - https://orca.security/resources/blog/cvss-version-4-versus-version-3/

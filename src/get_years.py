@@ -2,7 +2,7 @@ import requests
 import os
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from config import GH_TOKEN
+#from config import GH_TOKEN
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -19,7 +19,7 @@ def get_years():
     retry_startegy = Retry(
         total = 3,
         backoff_factor= 1,
-        status_forcelist=[ 404, 429, 500, 502, 503, 504]
+        status_forcelist=[404, 429, 500, 502, 503, 504]
     )
 
     adpater = HTTPAdapter(
@@ -46,20 +46,27 @@ def get_years():
     try:
         resp = session.get(url = target_url)
 
+        print(resp.json())
+
         if resp.status_code == 200:
+
             fetched_data = resp.json()
 
-            if fetched_data:
+            if fetched_data!=None:
                 years_list = [year_item['name'] for year_item in fetched_data 
                               if year_item['type']== 'dir' and year_item['name'] not in ['.github', 'assets']]
                 
                 if len(years_list) != 0:
                     logging.info(f'Successfully fetched all years. Number of years to be processed: {len(years_list)}')
-                    return years_list       
+                    return years_list   
+                else:
+                    print('No years fetched') 
     except requests.RequestException as re:
         logging.error(f'An error occurred in fetching all years: {re}')
         return []
 
 if __name__ == '__main__':
-    get_years()
+    years = get_years()
+    
+    print(f'These are years: {years}')
 
