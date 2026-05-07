@@ -64,8 +64,8 @@ jobs:
           id: 
             get_all_years
           run: |
-            echo "all_years=$(python -c 'from src.get_years import get_years; print(get_years())')" >> "$GITHUB_OUTPUT"
-
+              chmod +x ./scripts/get_years.sh
+              ./scripts/get_years.sh
   extract-create-datasets:
     runs-on: ubuntu-latest
     needs: setup-project

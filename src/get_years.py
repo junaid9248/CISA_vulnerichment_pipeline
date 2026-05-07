@@ -14,7 +14,7 @@ def get_years():
     base_url = "https://api.github.com"
     repo_owner_name = 'cisagov'
     repo_name = 'vulnrichment'
-    GH_token = os.environ.get('GH_TOKEN') or GH_TOKEN
+    GH_token = os.environ.get('GH_TOKEN')
 
     retry_startegy = Retry(
         total = 3,
@@ -66,7 +66,7 @@ def get_years():
         return []
 
 if __name__ == '__main__':
-    years = get_years()
     
+    years = get_years()
     print(f'These are years: {years}')
 
