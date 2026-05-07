@@ -76,7 +76,7 @@ jobs:
     strategy:
       matrix:
         year: ${{fromJson(needs.setup-project.outputs.all_years)}}
-        #year: [1999, 2000, 2001, 2002]
+        #year: [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006]
 
     steps:
       - *repo_checkout_step
@@ -85,7 +85,7 @@ jobs:
 
       - *install_dependencies_step
 
-      - name: Run main python script with a year from the matrix
+      - name: Run main python script in extract mode for year ${{matrix.year}}
         run: |
           python main.py --year ${{matrix.year}}
 
@@ -110,10 +110,10 @@ jobs:
       - *repo_checkout_step
 
       - name: Fetch all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: cve_*
-          path: dataset/downloaded_artifacts
+          path: dataset/
 
       - name: Combine all artifacts
         run: |
@@ -147,14 +147,21 @@ jobs:
 
       - *install_dependencies_step
 
-      - name: Download combined dataset artifact
+      - name: Download all dataset artifacts to dataset folder
         uses: actions/download-artifact@v4
 
         with:
-          name: cve_combined
+          pattern: cve_*
           path: dataset/
 
-      - name: Upload combined dataset
+      - name: Flatten dataset directory
+        run: |
+          find dataset/ -mindepth 2 -type f -name "*.csv" -exec mv -t dataset/ {} +
+          find dataset/ -mindepth 1 -type d -empty -delete
+          ls -R dataset/
+
+ 
+      - name: Upload combined dataset alongwith all other years datasets
         run: |
           cd scripts
           chmod +x kaggle_credentials.sh
@@ -164,6 +171,7 @@ jobs:
           pwd
 
           python main.py --upload
+
 
 
 

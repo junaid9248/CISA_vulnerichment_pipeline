@@ -38,7 +38,7 @@ def handle_rate_limit(response):
     return False
  
 def write_to_csv(data: Dict = {},writer: Any = None):
-    logging.info(f'Adding entry for {data}')
+    #logging.info(f'Adding entry for {data}')
     #Normalizing lists for csv entry
     if isinstance(data.get('impacted_products'), list):
         data['impacted_products'] = ','.join(data['impacted_products'])
